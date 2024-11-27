@@ -36,7 +36,6 @@ public class MainPanelActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 NavController navController = Navigation.findNavController(MainPanelActivity.this, R.id.nav_host_fragment_content_main_panel);
-
                 //Obtener el ID del fragmento actual
                 int currentFragmentId = navController.getCurrentDestination().getId();
 

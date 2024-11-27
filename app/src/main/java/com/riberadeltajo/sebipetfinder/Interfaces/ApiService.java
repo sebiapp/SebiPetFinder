@@ -28,6 +28,9 @@ public interface ApiService {
                               @Field("username") String username,
                               @Field("email") String email,
                               @Field("password") String password);
+    @FormUrlEncoded
+    @POST("enviar_codigo.php")
+    Call<JsonObject> enviarCodigo(@Field("email") String email);
     /* OBTENER TODAS LAS MASCOTAS */
     @GET("getMascotas.php")
     Call<List<Mascota>> getMascotas();

@@ -1,9 +1,15 @@
 package com.riberadeltajo.sebipetfinder.Principal;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
@@ -12,7 +18,11 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.gson.JsonObject;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
@@ -33,18 +43,28 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 public class NuevaMascotaPerdida extends AppCompatActivity {
-
     private EditText etNombre, etDescripcion, etTelefono, etCiudad;
     private Button btnSeleccionarFoto, btnGuardarMascota;
     private String fotoUrl = "";
     private Uri selectedImageUri;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
     private ImageView ivVistaPrevia;
+    private Uri uri;
+    private static final int CAMERA_PERMISSION_CODE = 100;
+    private static final int STORAGE_PERMISSION_CODE = 101;
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_nueva_mascota_perdida);
+
+        inicializarVistas();
+        configurarLaunchers();
+        configurarBotones();
+    }
+
+    private void inicializarVistas() {
         etNombre = findViewById(R.id.etNombre);
         etDescripcion = findViewById(R.id.etDescripcion);
         etTelefono = findViewById(R.id.etTelefono);
@@ -52,6 +72,9 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
         btnSeleccionarFoto = findViewById(R.id.btnSeleccionarFoto);
         btnGuardarMascota = findViewById(R.id.btnGuardarMascota);
         ivVistaPrevia = findViewById(R.id.ivVistaPrevia);
+    }
+
+    private void configurarLaunchers() {
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -61,8 +84,10 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
                     }
                 }
         );
+    }
 
-        btnSeleccionarFoto.setOnClickListener(v -> seleccionarImagen());
+    private void configurarBotones() {
+        btnSeleccionarFoto.setOnClickListener(v -> mostrarOpcionesImagen());
         btnGuardarMascota.setOnClickListener(v -> {
             if (selectedImageUri != null) {
                 subirImagen(selectedImageUri);
@@ -72,11 +97,101 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
         });
     }
 
+    private void mostrarOpcionesImagen() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Seleccionar imagen");
+        String[] opciones = {"Tomar foto", "Elegir de la galería"};
+
+        builder.setItems(opciones, (dialog, which) -> {
+            switch (which) {
+                case 0:
+                    verificarPermisoCamara();
+                    break;
+                case 1:
+                    verificarPermisoAlmacenamiento();
+                    break;
+            }
+        });
+        builder.show();
+    }
+
+    private void verificarPermisoCamara() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
+        } else {
+            abrirCamara();
+        }
+    }
+
+    private void verificarPermisoAlmacenamiento() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_PERMISSION_CODE);
+            } else {
+                seleccionarImagen();
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+            } else {
+                seleccionarImagen();
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (grantResults.length > 0) {
+            switch (requestCode) {
+                case CAMERA_PERMISSION_CODE:
+                    if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                        abrirCamara();
+                    } else {
+                        Toast.makeText(this, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+
+                case STORAGE_PERMISSION_CODE:
+                    if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                        seleccionarImagen();
+                    } else {
+                        Toast.makeText(this, "Permiso de almacenamiento denegado", Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+            }
+        }
+    }
+
     private void seleccionarImagen() {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType("image/*");
         imagePickerLauncher.launch(intent);
     }
+
+    private void abrirCamara() {
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.TITLE, "Título");
+        values.put(MediaStore.Images.Media.DESCRIPTION, "Descripción");
+
+        uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+        camaraARL.launch(intent);
+    }
+
+    private ActivityResultLauncher<Intent> camaraARL = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    selectedImageUri = uri;
+                    ivVistaPrevia.setImageURI(uri);
+                } else {
+                    Toast.makeText(NuevaMascotaPerdida.this, "Cancelado por el usuario", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
 
     private void subirImagen(Uri imageUri) {
         try {
@@ -91,7 +206,7 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
             inputStream.close();
             outputStream.close();
 
-            RequestBody requestFile = RequestBody.create(file, MediaType.parse("image/*"));
+            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
             MultipartBody.Part body = MultipartBody.Part.createFormData("image", file.getName(), requestFile);
 
             Retrofit retrofit = new Retrofit.Builder()
