@@ -204,7 +204,35 @@ public class PerfilInfo extends AppCompatActivity {
         String usuario= tvUsuario.getText().toString();
         String email= tvEmail.getText().toString();
         String contra= tvContra.getText().toString();
+        // Validar campos
+        if (nombre.isEmpty()) {
+            tvNombre.setError("El nombre es obligatorio");
+            tvNombre.requestFocus();
+            return;
+        }
 
+        if (apellido.isEmpty()) {
+            tvApellido.setError("Los apellidos son obligatorios");
+            tvApellido.requestFocus();
+            return;
+        }
+
+        if (usuario.isEmpty()) {
+            tvUsuario.setError("El usuario es obligatorio");
+            tvUsuario.requestFocus();
+            return;
+        }
+
+        if (email.isEmpty()) {
+            tvEmail.setError("El correo es obligatorio");
+            tvEmail.requestFocus();
+            return;
+        }
+        if (contra.isEmpty()) {
+            tvContra.setError("La contraseña es obligatoria");
+            tvContra.requestFocus();
+            return;
+        }
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
                 .addConverterFactory(ScalarsConverterFactory.create())

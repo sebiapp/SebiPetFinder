@@ -244,6 +244,30 @@ public class NuevaMascota extends AppCompatActivity {
         String descripcion = etDescripcion.getText().toString();
         String telefono = etTelefono.getText().toString();
         String ciudad = etCiudad.getText().toString();
+        // Validar campos
+        if (nombre.isEmpty()) {
+            etNombre.setError("El nombre es obligatorio");
+            etNombre.requestFocus();
+            return;
+        }
+
+        if (descripcion.isEmpty()) {
+            etDescripcion.setError("La descripción es obligatoria");
+            etDescripcion.requestFocus();
+            return;
+        }
+
+        if (telefono.isEmpty()) {
+            etTelefono.setError("El teléfono es obligatorio");
+            etTelefono.requestFocus();
+            return;
+        }
+
+        if (ciudad.isEmpty()) {
+            etCiudad.setError("La ciudad es obligatoria");
+            etCiudad.requestFocus();
+            return;
+        }
         int userId = obtenerUserId();
 
         if (userId == -1) {

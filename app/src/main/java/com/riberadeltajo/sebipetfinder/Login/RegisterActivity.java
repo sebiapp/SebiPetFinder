@@ -17,6 +17,9 @@ import com.google.gson.JsonObject;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
 import com.riberadeltajo.sebipetfinder.R;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -195,20 +198,26 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<String> call, Response<String> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    String responseBody = response.body();
-                    Toast.makeText(RegisterActivity.this, responseBody, Toast.LENGTH_LONG).show();
+                    try {
+                        JSONObject jsonResponse = new JSONObject(response.body());
+                        String status = jsonResponse.getString("status");
+                        String message = jsonResponse.getString("message");
 
-                    if (responseBody.contains("exitoso")) {
-                        startActivity(new Intent(RegisterActivity.this, MainActivity.class));
-                        finish();
+                        if (status.equals("error")) {
+                            Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_LONG).show();
+                        } else if (status.equals("success")) {
+                            Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_LONG).show();
+                            startActivity(new Intent(RegisterActivity.this, MainActivity.class));
+                            finish();
+                        }
+                    } catch (JSONException e) {
+                        Toast.makeText(RegisterActivity.this, "Error al procesar la respuesta", Toast.LENGTH_LONG).show();
                     }
                 } else {
                     try {
                         String errorBody = response.errorBody().string();
-                        JsonObject jsonError = new Gson().fromJson(errorBody, JsonObject.class);
-                        String errorMessage = jsonError.has("error") ?
-                                jsonError.get("error").getAsString() :
-                                "Error en el registro";
+                        JSONObject errorJson = new JSONObject(errorBody);
+                        String errorMessage = errorJson.getString("message");
                         Toast.makeText(RegisterActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                     } catch (Exception e) {
                         Toast.makeText(RegisterActivity.this, "Error en el registro", Toast.LENGTH_LONG).show();

@@ -70,7 +70,30 @@ public class AnuncioInfo extends AppCompatActivity {
         String descripcion = tvDescripcion.getText().toString();
         String telefono = tvTelefono.getText().toString();
         String ciudad = tvCiudad.getText().toString();
+        // Validar campos
+        if (nombre.isEmpty()) {
+            tvNombre.setError("El nombre es obligatorio");
+            tvNombre.requestFocus();
+            return;
+        }
 
+        if (descripcion.isEmpty()) {
+            tvDescripcion.setError("La descripción es obligatoria");
+            tvDescripcion.requestFocus();
+            return;
+        }
+
+        if (telefono.isEmpty()) {
+            tvTelefono.setError("El teléfono es obligatorio");
+            tvTelefono.requestFocus();
+            return;
+        }
+
+        if (ciudad.isEmpty()) {
+            tvCiudad.setError("La ciudad es obligatoria");
+            tvCiudad.requestFocus();
+            return;
+        }
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
                 .addConverterFactory(ScalarsConverterFactory.create())

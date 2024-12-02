@@ -55,7 +55,7 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         btnCorreo.setOnClickListener(v -> {
             if (ciudad != null && !ciudad.isEmpty()) {
                 Intent intentCorreo = new Intent(Intent.ACTION_SEND);
-                intentCorreo.setType("message/rfc822"); // Define el tipo MIME para correos electrónicos
+                intentCorreo.setType("message/rfc822");
                 intentCorreo.putExtra(Intent.EXTRA_EMAIL, new String[]{"sebiandrei.crucianu@riberadeltajo.es"});
                 intentCorreo.putExtra(Intent.EXTRA_SUBJECT, "Información sobre mascota de " + ciudad);
                 intentCorreo.putExtra(Intent.EXTRA_TEXT, "Hola,\n\nNecesitamos hablar sobre " + nombre + ".\n" +

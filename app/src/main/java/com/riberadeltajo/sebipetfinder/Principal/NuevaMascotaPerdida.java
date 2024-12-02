@@ -125,14 +125,29 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
 
     private void verificarPermisoAlmacenamiento() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13 o superior
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_PERMISSION_CODE);
             } else {
                 seleccionarImagen();
             }
         } else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+            // Android 12 o inferior
+            String[] permisos = {
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+            };
+
+            boolean todosPermisosOtorgados = true;
+            for (String permiso : permisos) {
+                if (ContextCompat.checkSelfPermission(this, permiso) != PackageManager.PERMISSION_GRANTED) {
+                    todosPermisosOtorgados = false;
+                    break;
+                }
+            }
+
+            if (!todosPermisosOtorgados) {
+                ActivityCompat.requestPermissions(this, permisos, STORAGE_PERMISSION_CODE);
             } else {
                 seleccionarImagen();
             }
@@ -240,10 +255,36 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
     }
 
     private void guardarMascota() {
-        String nombre = etNombre.getText().toString();
-        String descripcion = etDescripcion.getText().toString();
-        String telefono = etTelefono.getText().toString();
-        String ciudad = etCiudad.getText().toString();
+        String nombre = etNombre.getText().toString().trim();
+        String descripcion = etDescripcion.getText().toString().trim();
+        String telefono = etTelefono.getText().toString().trim();
+        String ciudad = etCiudad.getText().toString().trim();
+
+        // Validar campos
+        if (nombre.isEmpty()) {
+            etNombre.setError("El nombre es obligatorio");
+            etNombre.requestFocus();
+            return;
+        }
+
+        if (descripcion.isEmpty()) {
+            etDescripcion.setError("La descripción es obligatoria");
+            etDescripcion.requestFocus();
+            return;
+        }
+
+        if (telefono.isEmpty()) {
+            etTelefono.setError("El teléfono es obligatorio");
+            etTelefono.requestFocus();
+            return;
+        }
+
+        if (ciudad.isEmpty()) {
+            etCiudad.setError("La ciudad es obligatoria");
+            etCiudad.requestFocus();
+            return;
+        }
+
         int userId = obtenerUserId();
 
         if (userId == -1) {
