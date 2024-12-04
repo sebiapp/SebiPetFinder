@@ -1,5 +1,8 @@
 package com.riberadeltajo.sebipetfinder.ui.Perfil;
 
+import static android.content.Context.MODE_PRIVATE;
+
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -63,16 +66,31 @@ public class SlideshowFragment extends Fragment {
         loadAnuncios();
 
         btnGestionar.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(getContext(), PerfilInfo.class);
-                intent.putExtra("id",userId);
-                intent.putExtra("nom",nombre);
-                intent.putExtra("ape",apellidos);
-                intent.putExtra("user",usuario);
-                intent.putExtra("email",correo);
-                intent.putExtra("contra",contraseña);
-                startActivity(intent);
+                boolean isGoogleLogin = getContext()
+                        .getSharedPreferences("user_data", MODE_PRIVATE)
+                        .getBoolean("isGoogleLogin", false);
+                if(isGoogleLogin){
+                    new AlertDialog.Builder(getContext())
+                            .setTitle("Gestión de datos con Google")
+                            .setMessage("Has iniciado sesión con Google. Para gestionar tus datos, accede a tu cuenta de Google desde" +
+                                    " https://myaccount.google.com/")
+                            .setPositiveButton("Entendido", null)
+                            .show();
+                }else{
+                    Intent intent = new Intent(getContext(), PerfilInfo.class);
+                    intent.putExtra("id",userId);
+                    intent.putExtra("nom",nombre);
+                    intent.putExtra("ape",apellidos);
+                    intent.putExtra("user",usuario);
+                    intent.putExtra("email",correo);
+                    intent.putExtra("contra",contraseña);
+                    startActivity(intent);
+                }
+
+
 
             }
         });

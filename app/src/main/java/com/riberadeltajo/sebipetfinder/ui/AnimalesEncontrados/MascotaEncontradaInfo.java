@@ -9,14 +9,25 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-
+import android.content.Context;
+import android.preference.PreferenceManager;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
 import com.riberadeltajo.sebipetfinder.R;
 import com.squareup.picasso.Picasso;
 
 public class MascotaEncontradaInfo extends AppCompatActivity {
+    private MapView mapView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Configurar OpenStreetMap
+        Context ctx = getApplicationContext();
+        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+
         setContentView(R.layout.activity_mascota_encontrada_info);
 
         String nombre = getIntent().getStringExtra("nombre");
@@ -28,7 +39,7 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         TextView tvNombre = findViewById(R.id.tvNombre);
         TextView tvDescripcion = findViewById(R.id.tvApellido);
         TextView tvTelefono = findViewById(R.id.tvUsuario);
-        TextView tvCiudad = findViewById(R.id.tvCorreo);
+        mapView = findViewById(R.id.mapView);
         ImageView ivFoto = findViewById(R.id.ivFoto);
         Button btnLlamar = findViewById(R.id.btnGuardar);
         Button btnCorreo = findViewById(R.id.emailButton);
@@ -36,8 +47,33 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         tvNombre.setText(String.format("Nombre: %s", nombre));
         tvDescripcion.setText(String.format("Descripción: %s", descripcion));
         tvTelefono.setText(String.format("Teléfono: %s", telefono));
-        tvCiudad.setText(String.format("Ciudad: %s", ciudad));
+        //tvCiudad.setText(String.format("Ciudad: %s", ciudad));
+        if (ciudad != null && !ciudad.isEmpty()) {
+            try {
+                String[] coordenadas = ciudad.split(",");
+                if (coordenadas.length == 2) {
+                    double latitud = Double.parseDouble(coordenadas[0]);
+                    double longitud = Double.parseDouble(coordenadas[1]);
 
+                    //Configurar el mapa
+                    mapView.setTileSource(TileSourceFactory.MAPNIK);
+                    mapView.getController().setZoom(15.0);
+
+                    GeoPoint punto = new GeoPoint(latitud, longitud);
+                    mapView.getController().setCenter(punto);
+                    mapView.setMultiTouchControls(true);
+
+                    //Añadir marcador
+                    Marker marker = new Marker(mapView);
+                    marker.setPosition(punto);
+                    marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                    marker.setTitle("Ubicación de la mascota");
+                    mapView.getOverlays().add(marker);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         if (fotoUrl != null && !fotoUrl.isEmpty()) {
             Picasso.get().load(fotoUrl).into(ivFoto);
         }
@@ -60,8 +96,7 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
                 intentCorreo.putExtra(Intent.EXTRA_SUBJECT, "Información sobre mascota de " + ciudad);
                 intentCorreo.putExtra(Intent.EXTRA_TEXT, "Hola,\n\nNecesitamos hablar sobre " + nombre + ".\n" +
                         "Descripción: " + descripcion + "\n" +
-                        "Teléfono de contacto: " + telefono + "\n" +
-                        "Ciudad: " + ciudad + "\n\nGracias.");
+                        "Teléfono de contacto: " + telefono + "\n\nGracias");
 
                 try {
                     startActivity(Intent.createChooser(intentCorreo, "Elige una aplicación de correo"));

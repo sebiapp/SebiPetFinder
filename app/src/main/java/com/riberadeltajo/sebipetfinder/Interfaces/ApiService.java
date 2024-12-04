@@ -2,6 +2,7 @@ package com.riberadeltajo.sebipetfinder.Interfaces;
 
 import com.google.gson.JsonObject;
 import com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados.Mascota;
+import com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados.NominatimResponse;
 
 import java.util.List;
 
@@ -13,6 +14,7 @@ import retrofit2.http.GET;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
+import retrofit2.http.Query;
 
 public interface ApiService {
     /* PARA EL INICIO DE SESION */
@@ -20,6 +22,14 @@ public interface ApiService {
     @POST("login.php")
     Call<String> loginUser(@Field("username") String username,
                            @Field("password") String password);
+    /* PARA EL INICIO DE SESION CON GOOGLE */
+    @FormUrlEncoded
+    @POST("login.php")
+    Call<String> loginWithGoogle(
+            @Field("google_id") String googleId,
+            @Field("email") String email,
+            @Field("name") String name
+    );
     /* PARA REGISTRAR */
     @FormUrlEncoded
     @POST("register.php")
@@ -140,5 +150,11 @@ public interface ApiService {
     @POST("getMascotasEncontradasByCity.php")
     Call<List<Mascota>> getMascotasEncontradasByCity(@Field("ciudad") String ciudad);
 
+    @FormUrlEncoded
+    @POST("forgot_password.php")
+    Call<JsonObject> enviarCodigoRestablecerPassword(@Field("email") String email);
+    @FormUrlEncoded
+    @POST("update_password.php")
+    Call<JsonObject> actualizarContrasena(@Field("email") String email, @Field("nueva_password") String nuevaPassword);
 
 }

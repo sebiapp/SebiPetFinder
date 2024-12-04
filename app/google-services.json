@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "13361919271",
+    "project_id": "sebipetfinder",
+    "storage_bucket": "sebipetfinder.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:13361919271:android:b47f9b483c94cbb280e502",
+        "android_client_info": {
+          "package_name": "com.riberadeltajo.sebipetfinder"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "13361919271-2ok2sk3eqlji9bkgq66hibl32g3lldpq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.riberadeltajo.sebipetfinder",
+            "certificate_hash": "a75962df824df35137a4c3e152ece37ee1310532"
+          }
+        },
+        {
+          "client_id": "13361919271-st24lsaiab3fobv7lsj2996ekr3tvre5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZV2mGgHCVJYPfVx5QA9waOJ4rmQpxDkg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "13361919271-st24lsaiab3fobv7lsj2996ekr3tvre5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

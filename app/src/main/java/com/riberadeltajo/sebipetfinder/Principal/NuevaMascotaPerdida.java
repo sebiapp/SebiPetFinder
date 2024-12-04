@@ -10,6 +10,12 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.InputFilter;
+import android.text.InputType;
+import android.text.Spanned;
+import android.telephony.PhoneNumberFormattingTextWatcher;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
@@ -24,9 +30,21 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.gson.JsonObject;
+import com.hbb20.CountryCodePicker;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
 import com.riberadeltajo.sebipetfinder.R;
+
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -42,7 +60,18 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
 
-public class NuevaMascotaPerdida extends AppCompatActivity {
+import android.content.Context;
+import android.preference.PreferenceManager;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.events.MapEventsReceiver;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.MapEventsOverlay;
+import org.osmdroid.views.overlay.Marker;
+import java.util.Locale;
+import com.google.android.gms.maps.OnMapReadyCallback;
+public class NuevaMascotaPerdida extends AppCompatActivity implements OnMapReadyCallback {
     private EditText etNombre, etDescripcion, etTelefono, etCiudad;
     private Button btnSeleccionarFoto, btnGuardarMascota;
     private String fotoUrl = "";
@@ -52,28 +81,124 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
     private Uri uri;
     private static final int CAMERA_PERMISSION_CODE = 100;
     private static final int STORAGE_PERMISSION_CODE = 101;
+    private CountryCodePicker ccp;
 
-    @SuppressLint("MissingInflatedId")
+    private GoogleMap mMap;
+    private LatLng selectedLocation;
+    private static final int LOCATION_PERMISSION_CODE = 102;
+    private FusedLocationProviderClient fusedLocationClient;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_nueva_mascota_perdida);
 
         inicializarVistas();
+        configurarMapa();
         configurarLaunchers();
         configurarBotones();
+        configurarValidacionTelefono();
     }
 
     private void inicializarVistas() {
         etNombre = findViewById(R.id.etNombre);
         etDescripcion = findViewById(R.id.etDescripcion);
         etTelefono = findViewById(R.id.etTelefono);
-        etCiudad = findViewById(R.id.etCiudad);
+        //etCiudad = findViewById(R.id.etCiudad);
         btnSeleccionarFoto = findViewById(R.id.btnSeleccionarFoto);
         btnGuardarMascota = findViewById(R.id.btnGuardarMascota);
         ivVistaPrevia = findViewById(R.id.ivVistaPrevia);
+        ccp = findViewById(R.id.ccp);
+        ccp.registerCarrierNumberEditText(etTelefono);
+        ccp.setDefaultCountryUsingNameCode("ES");
+        ccp.setCountryForNameCode("ES");
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        verificarPermisosUbicacion();
+    }
+    private void configurarMapa() {
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        } else {
+            Toast.makeText(this, "Error al cargar el mapa", Toast.LENGTH_SHORT).show();
+        }
+    }
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+
+        // Configurar click listener para el mapa
+        mMap.setOnMapClickListener(latLng -> {
+            selectedLocation = latLng;
+            mMap.clear();
+            mMap.addMarker(new MarkerOptions().position(latLng).title("Ubicación seleccionada"));
+        });
+
+        // Centrar en España por defecto
+        LatLng spain = new LatLng(40.4168, -3.7038);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(spain, 6));
+
+        // Si tenemos permisos, obtener ubicación actual
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            obtenerUbicacionActual();
+        }
+    }
+    private void verificarPermisosUbicacion() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_CODE);
+        } else {
+            obtenerUbicacionActual();
+        }
+    }
+    private void obtenerUbicacionActual() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
+                if (location != null && mMap != null) {
+                    LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                    selectedLocation = currentLocation;
+                    mMap.clear();
+                    mMap.addMarker(new MarkerOptions()
+                            .position(currentLocation)
+                            .title("Tu ubicación actual"));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15));
+                }
+            });
+        }
     }
 
+    private void configurarValidacionTelefono() {
+        ccp.registerCarrierNumberEditText(etTelefono);
+
+        etTelefono.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String number = s.toString();
+                if (ccp.isValidFullNumber()) {
+                    if (s.length() > number.length()) {
+                        s.delete(number.length(), s.length());
+                    }
+                    etTelefono.setError(null);
+                } else if (s.length() > 0) {
+                    etTelefono.setError("Número inválido para " + ccp.getSelectedCountryName());
+                }
+            }
+        });
+
+        etTelefono.setInputType(InputType.TYPE_CLASS_PHONE);
+    }
     private void configurarLaunchers() {
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -125,14 +250,12 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
 
     private void verificarPermisoAlmacenamiento() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13 o superior
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, STORAGE_PERMISSION_CODE);
             } else {
                 seleccionarImagen();
             }
         } else {
-            // Android 12 o inferior
             String[] permisos = {
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -175,6 +298,11 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
                         Toast.makeText(this, "Permiso de almacenamiento denegado", Toast.LENGTH_SHORT).show();
                     }
                     break;
+            }
+        }
+        if (requestCode == LOCATION_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                obtenerUbicacionActual();
             }
         }
     }
@@ -257,9 +385,7 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
     private void guardarMascota() {
         String nombre = etNombre.getText().toString().trim();
         String descripcion = etDescripcion.getText().toString().trim();
-        String telefono = etTelefono.getText().toString().trim();
-        String ciudad = etCiudad.getText().toString().trim();
-
+        //String ciudad = etCiudad.getText().toString().trim();
         // Validar campos
         if (nombre.isEmpty()) {
             etNombre.setError("El nombre es obligatorio");
@@ -273,24 +399,32 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
             return;
         }
 
-        if (telefono.isEmpty()) {
-            etTelefono.setError("El teléfono es obligatorio");
+        if (!ccp.isValidFullNumber()) {
+            etTelefono.setError("Número de teléfono inválido");
             etTelefono.requestFocus();
             return;
         }
 
-        if (ciudad.isEmpty()) {
+        /*if (ciudad.isEmpty()) {
             etCiudad.setError("La ciudad es obligatoria");
             etCiudad.requestFocus();
             return;
+        }*/
+        if (selectedLocation == null) {
+            Toast.makeText(this, "Por favor selecciona la ubicación en el mapa", Toast.LENGTH_SHORT).show();
+            return;
         }
 
+        String numeroCompleto = ccp.getFullNumberWithPlus();
         int userId = obtenerUserId();
 
         if (userId == -1) {
             Toast.makeText(this, "Error: Usuario no autenticado", Toast.LENGTH_SHORT).show();
             return;
         }
+        String ciudad = String.format(Locale.US, "%.6f,%.6f",
+                selectedLocation.latitude,
+                selectedLocation.longitude);
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
@@ -298,7 +432,7 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
                 .build();
 
         ApiService apiService = retrofit.create(ApiService.class);
-        Call<String> call = apiService.addMascotaPerdida(nombre, descripcion, telefono, ciudad, fotoUrl, userId);
+        Call<String> call = apiService.addMascotaPerdida(nombre, descripcion, numeroCompleto, ciudad, fotoUrl, userId);
         call.enqueue(new Callback<String>() {
             @Override
             public void onResponse(Call<String> call, Response<String> response) {
@@ -327,4 +461,5 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
     private int obtenerUserId() {
         return getSharedPreferences("user_data", MODE_PRIVATE).getInt("userId", -1);
     }
+
 }

@@ -3,16 +3,19 @@ package com.riberadeltajo.sebipetfinder.Login;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
 import com.riberadeltajo.sebipetfinder.R;
@@ -34,7 +37,8 @@ public class RegisterActivity extends AppCompatActivity {
     private String codigoVerificacion;
     private boolean isVerified = false;
     private CountDownTimer countDownTimer;
-
+    private ImageView ivShowPassword;
+    private boolean isPasswordVisible = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,13 +60,35 @@ public class RegisterActivity extends AppCompatActivity {
         registerButton = findViewById(R.id.registerButton);
         tvTemporizador = findViewById(R.id.tvTemporizador);
         loginText = findViewById(R.id.loginText);
-
         registerButton.setEnabled(false);
         edCodigo.setEnabled(false);
         btnVerificar.setVisibility(View.GONE);
         btnReenviar.setVisibility(View.GONE);
-    }
 
+        edPassword.addTextChangedListener(new PasswordTextWatcher());
+
+        ivShowPassword = findViewById(R.id.ivShowPassword);
+
+        ivShowPassword.setOnClickListener(v -> togglePasswordVisibility());
+        loginText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+                startActivity(intent);
+            }
+        });
+    }
+    private void togglePasswordVisibility() {
+        if (isPasswordVisible) {
+            edPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            ivShowPassword.setImageResource(R.drawable.ojoclose);
+        } else {
+            edPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+            ivShowPassword.setImageResource(R.drawable.baseline_remove_red_eye_24);
+        }
+        edPassword.setSelection(edPassword.getText().length());
+        isPasswordVisible = !isPasswordVisible;
+    }
     private void configurarListeners() {
         btnEnviarCodigo.setOnClickListener(v -> {
             enviarCodigoVerificacion();
@@ -78,7 +104,6 @@ public class RegisterActivity extends AppCompatActivity {
         });
 
         registerButton.setOnClickListener(v -> registerUser());
-        loginText.setOnClickListener(v -> startActivity(new Intent(RegisterActivity.this, MainActivity.class)));
     }
 
     private void enviarCodigoVerificacion() {
@@ -89,7 +114,10 @@ public class RegisterActivity extends AppCompatActivity {
             Toast.makeText(this, "Ingrese un correo electrónico", Toast.LENGTH_SHORT).show();
             return;
         }
-
+        if (!esCorreoValido(email)) {
+            Toast.makeText(this, "El correo no tiene un formato válido", Toast.LENGTH_SHORT).show();
+            return;
+        }
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -130,6 +158,11 @@ public class RegisterActivity extends AppCompatActivity {
                 Toast.makeText(RegisterActivity.this, "Error al enviar código: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private boolean esCorreoValido(String email) {
+        String regex = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$";
+        return email.matches(regex);
     }
 
     private void iniciarTemporizador() {
@@ -180,7 +213,6 @@ public class RegisterActivity extends AppCompatActivity {
         String password = edPassword.getText().toString().trim();
         String email = edEmail.getText().toString().trim();
 
-        //Validar campos vacíos
         if (user_name.isEmpty() || user_lastname.isEmpty() || username.isEmpty() ||
                 password.isEmpty() || email.isEmpty()) {
             Toast.makeText(this, "Todos los campos son obligatorios", Toast.LENGTH_SHORT).show();
@@ -232,11 +264,52 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (countDownTimer != null) {
-            countDownTimer.cancel();
+    private class PasswordTextWatcher implements TextWatcher {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
         }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+            validarContrasena(s.toString());
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+        }
+    }
+
+    private void validarContrasena(String password) {
+        StringBuilder feedback = new StringBuilder();
+        boolean isValid = true;
+
+        if (password.length() < 8) {
+            feedback.append("Debe tener al menos 8 caracteres.\n");
+            isValid = false;
+        }
+        if (!password.matches(".*[A-Z].*")) {
+            feedback.append("Debe incluir al menos una letra mayúscula.\n");
+            isValid = false;
+        }
+        if (!password.matches(".*[a-z].*")) {
+            feedback.append("Debe incluir al menos una letra minúscula.\n");
+            isValid = false;
+        }
+        if (!password.matches(".*\\d.*")) {
+            feedback.append("Debe incluir al menos un número.\n");
+            isValid = false;
+        }
+        if (!password.matches(".*[@#$%^&+=!].*")) {
+            feedback.append("Debe incluir al menos un carácter especial (@#$%^&+=!).\n");
+            isValid = false;
+        }
+
+        if (feedback.length() > 0) {
+            edPassword.setError(feedback.toString().trim());
+        } else {
+            edPassword.setError(null);
+        }
+
+        registerButton.setEnabled(isValid);
     }
 }

@@ -6,6 +6,7 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -62,6 +63,8 @@ public class PerfilInfo extends AppCompatActivity {
         tvEmail.setText(email);
         tvContra.setText(contra);
         Log.d("id", String.valueOf(id));
+
+
         btnGuardar.setOnClickListener(v -> editarUsuario());
         btnBorrar.setOnClickListener(v -> borrarUsuario());
     }
@@ -204,6 +207,7 @@ public class PerfilInfo extends AppCompatActivity {
         String usuario= tvUsuario.getText().toString();
         String email= tvEmail.getText().toString();
         String contra= tvContra.getText().toString();
+
         // Validar campos
         if (nombre.isEmpty()) {
             tvNombre.setError("El nombre es obligatorio");
@@ -233,6 +237,7 @@ public class PerfilInfo extends AppCompatActivity {
             tvContra.requestFocus();
             return;
         }
+
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
                 .addConverterFactory(ScalarsConverterFactory.create())
