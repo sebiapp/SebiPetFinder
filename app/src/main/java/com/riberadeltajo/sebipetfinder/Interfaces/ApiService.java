@@ -7,6 +7,7 @@ import com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados.NominatimResponse;
 import java.util.List;
 
 import okhttp3.MultipartBody;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
@@ -101,8 +102,7 @@ public interface ApiService {
             @Field("mascota_id") int mascotaId,
             @Field("nombre") String nombre,
             @Field("descripcion") String descripcion,
-            @Field("telefono") String telefono,
-            @Field("ciudad") String ciudad
+            @Field("telefono") String telefono
     );
     /* EDITAR MASCOTA ENCONTRADA */
     @FormUrlEncoded
@@ -111,8 +111,7 @@ public interface ApiService {
             @Field("mascota_id") int mascotaId,
             @Field("nombre") String nombre,
             @Field("descripcion") String descripcion,
-            @Field("telefono") String telefono,
-            @Field("ciudad") String ciudad
+            @Field("telefono") String telefono
     );
     /* EDITAR USUARIO */
     @FormUrlEncoded
@@ -157,4 +156,18 @@ public interface ApiService {
     @POST("update_password.php")
     Call<JsonObject> actualizarContrasena(@Field("email") String email, @Field("nueva_password") String nuevaPassword);
 
+    @FormUrlEncoded
+    @POST("actualizarToken.php")
+    Call<String> actualizarToken(
+            @Field("user_id") String userId,
+            @Field("token") String token
+    );
+
+
+    @FormUrlEncoded
+    @POST("enviarNotificacion.php")
+    Call<JsonObject> enviarNotificacion(
+            @Field("anuncio_id") String anuncioId,
+            @Field("tipo") String tipo
+    );
 }

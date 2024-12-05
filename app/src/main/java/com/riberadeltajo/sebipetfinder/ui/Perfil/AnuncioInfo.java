@@ -1,6 +1,9 @@
 package com.riberadeltajo.sebipetfinder.ui.Perfil;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
@@ -10,6 +13,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.hbb20.CountryCodePicker;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
 import com.riberadeltajo.sebipetfinder.R;
 import com.squareup.picasso.Picasso;
@@ -26,11 +30,25 @@ public class AnuncioInfo extends AppCompatActivity {
     private ImageView ivFoto;
     private String fotoUrl;
     private boolean isMascotaPerdida;
-
+    private CountryCodePicker ccp;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_anuncio_info);
+
+        //Inicializar los elementos de la vista
+        tvNombre = findViewById(R.id.tvNombre);
+        tvDescripcion = findViewById(R.id.tvApellido);
+        tvTelefono = findViewById(R.id.etTelefono);
+        ivFoto = findViewById(R.id.ivFoto);
+        ccp = findViewById(R.id.ccp);
+        Button btnGuardar = findViewById(R.id.btnGuardar);
+        Button btnBorrar = findViewById(R.id.btnBorrar);
+
+        //Configurar el CountryCodePicker
+        ccp.registerCarrierNumberEditText(tvTelefono);
+        ccp.setDefaultCountryUsingNameCode("ES");
+        ccp.setCountryForNameCode("ES");
 
         mascotaId = getIntent().getIntExtra("mascotaId", -1);
         isMascotaPerdida = getIntent().getBooleanExtra("isMascotaPerdida", true);
@@ -42,20 +60,15 @@ public class AnuncioInfo extends AppCompatActivity {
         String descripcion = getIntent().getStringExtra("descripcion");
         fotoUrl = getIntent().getStringExtra("fotoUrl");
         String telefono = getIntent().getStringExtra("telefono");
-        String ciudad = getIntent().getStringExtra("ciudad");
-
-        tvNombre = findViewById(R.id.tvNombre);
-        tvDescripcion = findViewById(R.id.tvApellido);
-        tvTelefono = findViewById(R.id.tvUsuario);
-        tvCiudad = findViewById(R.id.tvCorreo);
-        ivFoto = findViewById(R.id.ivFoto);
-        Button btnGuardar = findViewById(R.id.btnGuardar);
-        Button btnBorrar = findViewById(R.id.btnBorrar);
 
         tvNombre.setText(nombre);
         tvDescripcion.setText(descripcion);
+        if (telefono != null && telefono.length() > 2) {
+            telefono = telefono.substring(3);
+        }
         tvTelefono.setText(telefono);
-        tvCiudad.setText(ciudad);
+
+        configurarValidacionTelefono();
 
         if (fotoUrl != null && !fotoUrl.isEmpty()) {
             Picasso.get().load(fotoUrl).into(ivFoto);
@@ -65,11 +78,35 @@ public class AnuncioInfo extends AppCompatActivity {
         btnBorrar.setOnClickListener(v -> borrarMascota());
     }
 
+    private void configurarValidacionTelefono() {
+        ccp.registerCarrierNumberEditText(tvTelefono);
+
+        tvTelefono.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String number = s.toString();
+                if (ccp.isValidFullNumber()) {
+                    if (s.length() > number.length()) {
+                        s.delete(number.length(), s.length());
+                    }
+                    tvTelefono.setError(null);
+                } else if (s.length() > 0) {
+                    tvTelefono.setError("Número inválido para " + ccp.getSelectedCountryName());
+                }
+            }
+        });
+
+        tvTelefono.setInputType(InputType.TYPE_CLASS_PHONE);
+    }
     private void editarMascota() {
         String nombre = tvNombre.getText().toString();
         String descripcion = tvDescripcion.getText().toString();
-        String telefono = tvTelefono.getText().toString();
-        String ciudad = tvCiudad.getText().toString();
         // Validar campos
         if (nombre.isEmpty()) {
             tvNombre.setError("El nombre es obligatorio");
@@ -83,17 +120,12 @@ public class AnuncioInfo extends AppCompatActivity {
             return;
         }
 
-        if (telefono.isEmpty()) {
-            tvTelefono.setError("El teléfono es obligatorio");
+        if (!ccp.isValidFullNumber()) {
+            tvTelefono.setError("Número de teléfono inválido");
             tvTelefono.requestFocus();
             return;
         }
-
-        if (ciudad.isEmpty()) {
-            tvCiudad.setError("La ciudad es obligatoria");
-            tvCiudad.requestFocus();
-            return;
-        }
+        String numeroCompleto = ccp.getFullNumberWithPlus();
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
                 .addConverterFactory(ScalarsConverterFactory.create())
@@ -103,9 +135,9 @@ public class AnuncioInfo extends AppCompatActivity {
 
         Call<String> call;
         if (isMascotaPerdida) {
-            call = apiService.editarMascotaPerdida(mascotaId, nombre, descripcion, telefono, ciudad);
+            call = apiService.editarMascotaPerdida(mascotaId, nombre, descripcion, numeroCompleto);
         } else {
-            call = apiService.editarMascotaEncontrada(mascotaId, nombre, descripcion, telefono, ciudad);
+            call = apiService.editarMascotaEncontrada(mascotaId, nombre, descripcion, numeroCompleto);
         }
 
         call.enqueue(new Callback<String>() {

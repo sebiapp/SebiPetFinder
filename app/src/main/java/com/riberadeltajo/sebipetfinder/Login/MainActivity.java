@@ -18,6 +18,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
 import com.riberadeltajo.sebipetfinder.Principal.MainPanelActivity;
 import com.riberadeltajo.sebipetfinder.R;
@@ -140,7 +141,16 @@ public class MainActivity extends AppCompatActivity {
                                     .edit()
                                     .putInt("userId", userId)
                                     .apply();
-
+                            FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+                                if (task.isSuccessful()) {
+                                    String token = task.getResult();
+                                    if (userId != -1) {
+                                        actualizarToken(userId, token);
+                                    }
+                                } else {
+                                    Log.e("FCM", "Error al obtener el token", task.getException());
+                                }
+                            });
                             Intent intent = new Intent(MainActivity.this, MainPanelActivity.class);
                             startActivity(intent);
                             Toast.makeText(MainActivity.this, "Login Correcto", Toast.LENGTH_LONG).show();
@@ -221,6 +231,19 @@ public class MainActivity extends AppCompatActivity {
                             Intent intent = new Intent(MainActivity.this, MainPanelActivity.class);
                             startActivity(intent);
                             Toast.makeText(MainActivity.this, "Login Correcto", Toast.LENGTH_LONG).show();
+
+                            // gUARDAR TOKEN DISPISITIVO
+                            FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+                                if (task.isSuccessful()) {
+                                    String token = task.getResult();
+                                    if (userId != -1) {
+                                        actualizarToken(userId, token);
+                                    }
+                                } else {
+                                    Log.e("FCM", "Error al obtener el token", task.getException());
+                                }
+                            });
+
                         } else {
                             Toast.makeText(MainActivity.this, "Usuario o contraseña incorrecto", Toast.LENGTH_LONG).show();
                         }
@@ -240,4 +263,30 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    private void actualizarToken(int userId, String token) {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
+                .addConverterFactory(ScalarsConverterFactory.create())
+                .build();
+
+        ApiService apiService = retrofit.create(ApiService.class);
+
+        Call<String> call = apiService.actualizarToken(String.valueOf(userId), token);
+        call.enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(Call<String> call, Response<String> response) {
+                if (response.isSuccessful()) {
+                    Log.d("FCM", "Token actualizado correctamente en el servidor");
+                } else {
+                    Log.e("FCM", "Error al actualizar el token en el servidor");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<String> call, Throwable t) {
+                Log.e("FCM", "Error al enviar el token al servidor", t);
+            }
+        });
+    }
+
 }

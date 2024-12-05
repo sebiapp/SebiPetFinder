@@ -6,13 +6,15 @@ public class Mascota {
     private String fotoUrl;
     private String telefono;
     private String ciudad;
+    private String user_id;
 
-    public Mascota(String nombre, String descripcion, String fotoUrl, String telefono,String ciudad) {
+    public Mascota(String nombre, String descripcion, String fotoUrl, String telefono, String ciudad, String user_id) {
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.fotoUrl = fotoUrl;
         this.telefono = telefono;
         this.ciudad = ciudad;
+        this.user_id = user_id;
     }
 
     public String getNombre() {
@@ -46,6 +48,7 @@ public class Mascota {
     public void setTelefono(String telefono) {
         this.telefono = telefono;
     }
+
     public String getCiudad() {
         return ciudad;
     }
@@ -54,4 +57,11 @@ public class Mascota {
         this.ciudad = ciudad;
     }
 
+    public String getUser_id() {
+        return user_id;
+    }
+
+    public void setUser_id(String user_id) {
+        this.user_id = user_id;
+    }
 }

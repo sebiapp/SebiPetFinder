@@ -47,7 +47,7 @@ public class MascotaAdapter extends RecyclerView.Adapter<MascotaAdapter.ViewHold
         notifyDataSetChanged();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public class ViewHolder extends RecyclerView.ViewHolder {
         ImageView imageViewFoto;
         TextView textViewNombre;
 
@@ -66,9 +66,11 @@ public class MascotaAdapter extends RecyclerView.Adapter<MascotaAdapter.ViewHold
                     intent.putExtra("fotoUrl", selectedMascota.getFotoUrl());
                     intent.putExtra("telefono", selectedMascota.getTelefono());
                     intent.putExtra("ciudad", selectedMascota.getCiudad());
+                    intent.putExtra("anuncioId", selectedMascota.getUser_id());
                     context.startActivity(intent);
                 }
             });
         }
     }
+
 }

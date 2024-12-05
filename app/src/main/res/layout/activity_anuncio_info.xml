@@ -1,10 +1,8 @@
-<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
     tools:context=".ui.AnimalesEncontrados.MascotaEncontradaInfo">
 
     <Button
@@ -44,9 +42,7 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         android:textColor="@color/black"
         android:textColorHighlight="@color/cardview_dark_background"
-
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/ivFoto" />
 
@@ -63,51 +59,41 @@
         android:textColor="@color/black"
         android:textColorHighlight="@color/cardview_dark_background"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvNombre" />
 
-    <EditText
-        android:id="@+id/tvUsuario"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:id="@+id/phoneContainer"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:background="@drawable/custom_edittext"
-        android:drawableLeft="@drawable/baseline_local_phone_24"
-        android:drawablePadding="8dp"
-        android:padding="8dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        android:textColor="@color/black"
-        android:textColorHighlight="@color/cardview_dark_background"
+        android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
-        android:inputType="number"
-        android:maxLength="12"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvApellido" />
+        app:layout_constraintTop_toBottomOf="@id/tvApellido">
 
-    <EditText
-        android:id="@+id/tvCorreo"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/custom_edittext"
-        android:drawableLeft="@drawable/baseline_location_on_24"
-        android:drawablePadding="8dp"
-        android:padding="8dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        android:textColor="@color/black"
-        android:textColorHighlight="@color/cardview_dark_background"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvUsuario" />
+        <com.hbb20.CountryCodePicker
+            android:id="@+id/ccp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:ccp_autoDetectCountry="true"
+            app:ccp_showFlag="true"
+            app:ccp_showNameCode="true" />
+
+        <EditText
+            android:id="@+id/etTelefono"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Teléfono"
+            android:inputType="phone" />
+    </LinearLayout>
 
     <Button
         android:id="@+id/btnGuardar"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:layout_marginTop="28dp"
+        android:layout_marginTop="72dp"
         android:backgroundTint="@color/purple"
         android:drawableLeft="@android:drawable/ic_menu_save"
         android:text="GUARDAR CAMBIOS"
@@ -116,8 +102,7 @@
         android:textStyle="bold"
         app:cornerRadius="20dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvCorreo" />
+        app:layout_constraintTop_toBottomOf="@+id/phoneContainer" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
