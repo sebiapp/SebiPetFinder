@@ -76,7 +76,7 @@ public class SlideshowFragment extends Fragment {
                     new AlertDialog.Builder(getContext())
                             .setTitle("Gestión de datos con Google")
                             .setMessage("Has iniciado sesión con Google. Para gestionar tus datos, accede a tu cuenta de Google desde" +
-                                    " https://myaccount.google.com/")
+                                    "\n https://myaccount.google.com/")
                             .setPositiveButton("Entendido", null)
                             .show();
                 }else{

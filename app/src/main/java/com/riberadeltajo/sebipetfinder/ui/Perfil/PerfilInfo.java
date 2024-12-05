@@ -170,7 +170,7 @@ public class PerfilInfo extends AppCompatActivity {
                             .build();
 
                     ApiService apiService = retrofit.create(ApiService.class);
-                    Call<String> call = apiService.borrarUsuario(id); // Enviar el id del usuario
+                    Call<String> call = apiService.borrarUsuario(id);
 
                     call.enqueue(new Callback<String>() {
                         @Override
@@ -227,14 +227,10 @@ public class PerfilInfo extends AppCompatActivity {
             return;
         }
 
-        if (email.isEmpty()) {
-            tvEmail.setError("El correo es obligatorio");
-            tvEmail.requestFocus();
+        if (!validarCorreo(email)) {
             return;
         }
-        if (contra.isEmpty()) {
-            tvContra.setError("La contraseña es obligatoria");
-            tvContra.requestFocus();
+        if (!validarContrasena(contra)) {
             return;
         }
 
@@ -285,4 +281,47 @@ public class PerfilInfo extends AppCompatActivity {
         });
 
     }
+    private boolean validarCorreo(String email) {
+        String emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+";
+        if (!email.matches(emailPattern)) {
+            tvEmail.setError("Correo inválido. Debe tener el formato correcto, por ejemplo: usuario@dominio.com");
+            tvEmail.requestFocus();
+            return false;
+        }
+        return true;
+    }
+
+    private boolean validarContrasena(String password) {
+        StringBuilder feedback = new StringBuilder();
+        boolean isValid = true;
+
+        if (password.length() < 8) {
+            feedback.append("Debe tener al menos 8 caracteres.\n");
+            isValid = false;
+        }
+        if (!password.matches(".*[A-Z].*")) {
+            feedback.append("Debe incluir al menos una letra mayúscula.\n");
+            isValid = false;
+        }
+        if (!password.matches(".*[a-z].*")) {
+            feedback.append("Debe incluir al menos una letra minúscula.\n");
+            isValid = false;
+        }
+        if (!password.matches(".*\\d.*")) {
+            feedback.append("Debe incluir al menos un número.\n");
+            isValid = false;
+        }
+        if (!password.matches(".*[@#$%^&+=!].*")) {
+            feedback.append("Debe incluir al menos un carácter especial (@#$%^&+=!).\n");
+            isValid = false;
+        }
+
+        if (!isValid) {
+            tvContra.setError(feedback.toString().trim());
+            tvContra.requestFocus();
+        }
+
+        return isValid;
+    }
+
 }
