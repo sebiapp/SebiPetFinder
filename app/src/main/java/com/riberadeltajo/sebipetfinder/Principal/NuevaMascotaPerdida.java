@@ -74,7 +74,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import com.google.android.gms.maps.OnMapReadyCallback;
-public class NuevaMascotaPerdida extends AppCompatActivity implements OnMapReadyCallback {
+public class NuevaMascotaPerdida extends AppCompatActivity {
     private EditText etNombre, etDescripcion, etTelefono, etCiudad;
     private Button btnSeleccionarFoto, btnGuardarMascota;
     private String fotoUrl = "";
@@ -86,14 +86,19 @@ public class NuevaMascotaPerdida extends AppCompatActivity implements OnMapReady
     private static final int STORAGE_PERMISSION_CODE = 101;
     private CountryCodePicker ccp;
 
-    private GoogleMap mMap;
-    private LatLng selectedLocation;
+    private MapView mapView;
+    private GeoPoint selectedLocation;
+    private Marker currentMarker;
     private static final int LOCATION_PERMISSION_CODE = 102;
     private FusedLocationProviderClient fusedLocationClient;
 
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Configurar OpenStreetMap
+        Context ctx = getApplicationContext();
+        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
         setContentView(R.layout.activity_nueva_mascota_perdida);
 
         inicializarVistas();
@@ -116,39 +121,11 @@ public class NuevaMascotaPerdida extends AppCompatActivity implements OnMapReady
         ccp.setDefaultCountryUsingNameCode("ES");
         ccp.setCountryForNameCode("ES");
 
+        mapView = findViewById(R.id.mapView);
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         verificarPermisosUbicacion();
     }
-    private void configurarMapa() {
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        if (mapFragment != null) {
-            mapFragment.getMapAsync(this);
-        } else {
-            Toast.makeText(this, "Error al cargar el mapa", Toast.LENGTH_SHORT).show();
-        }
-    }
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
 
-        // Configurar click listener para el mapa
-        mMap.setOnMapClickListener(latLng -> {
-            selectedLocation = latLng;
-            mMap.clear();
-            mMap.addMarker(new MarkerOptions().position(latLng).title("Ubicación seleccionada"));
-        });
-
-        // Centrar en España por defecto
-        LatLng spain = new LatLng(40.4168, -3.7038);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(spain, 6));
-
-        // Si tenemos permisos, obtener ubicación actual
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            obtenerUbicacionActual();
-        }
-    }
     private void verificarPermisosUbicacion() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -160,22 +137,73 @@ public class NuevaMascotaPerdida extends AppCompatActivity implements OnMapReady
         }
     }
     private void obtenerUbicacionActual() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED) {
+
             fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
-                if (location != null && mMap != null) {
-                    LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
-                    selectedLocation = currentLocation;
-                    mMap.clear();
-                    mMap.addMarker(new MarkerOptions()
-                            .position(currentLocation)
-                            .title("Tu ubicación actual"));
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15));
+                if (location != null) {
+                    GeoPoint punto = new GeoPoint(location.getLatitude(), location.getLongitude());
+                    mapView.getController().setCenter(punto);
+                    mapView.getController().setZoom(17.0);
+
+                    // Crear marcador inicial
+                    selectedLocation = punto;
+                    if (currentMarker != null) {
+                        mapView.getOverlays().remove(currentMarker);
+                    }
+
+                    Marker marker = new Marker(mapView);
+                    marker.setPosition(punto);
+                    marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                    marker.setTitle("Tu ubicación actual");
+
+                    mapView.getOverlays().add(marker);
+                    currentMarker = marker;
+                    mapView.invalidate();
                 }
             });
         }
     }
+    private void configurarMapa() {
+        mapView.setTileSource(TileSourceFactory.MAPNIK);
+        mapView.getController().setZoom(15.0);
 
+        //Centrar en España por defecto
+        GeoPoint startPoint = new GeoPoint(40.4168, -3.7038);
+        mapView.getController().setCenter(startPoint);
+
+        mapView.setMultiTouchControls(true);
+        mapView.setBuiltInZoomControls(true);
+
+        //clicks en el mapa
+        MapEventsReceiver mReceive = new MapEventsReceiver() {
+            @Override
+            public boolean singleTapConfirmedHelper(GeoPoint p) {
+                selectedLocation = p;
+                if (currentMarker != null) {
+                    mapView.getOverlays().remove(currentMarker);
+                }
+
+                Marker marker = new Marker(mapView);
+                marker.setPosition(p);
+                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                marker.setTitle("Ubicación seleccionada");
+
+                mapView.getOverlays().add(marker);
+                currentMarker = marker;
+                mapView.invalidate();
+                return true;
+            }
+
+            @Override
+            public boolean longPressHelper(GeoPoint p) {
+                return false;
+            }
+        };
+
+        MapEventsOverlay eventsOverlay = new MapEventsOverlay(mReceive);
+        mapView.getOverlays().add(eventsOverlay);
+    }
     private void configurarValidacionTelefono() {
         ccp.registerCarrierNumberEditText(etTelefono);
 
@@ -431,8 +459,8 @@ public class NuevaMascotaPerdida extends AppCompatActivity implements OnMapReady
             return;
         }
         String ciudad = String.format(Locale.US, "%.6f,%.6f",
-                selectedLocation.latitude,
-                selectedLocation.longitude);
+                selectedLocation.getLatitude(),
+                selectedLocation.getLongitude());
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
@@ -469,5 +497,19 @@ public class NuevaMascotaPerdida extends AppCompatActivity implements OnMapReady
     private int obtenerUserId() {
         return getSharedPreferences("user_data", MODE_PRIVATE).getInt("userId", -1);
     }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mapView != null) {
+            mapView.onResume();
+        }
+    }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mapView != null) {
+            mapView.onPause();
+        }
+    }
 }

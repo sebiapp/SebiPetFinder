@@ -73,6 +73,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".ui.AnimalesEncontrados.FullScreenImageActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"/>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.riberadeltajo.sebipetfinder.fileprovider"

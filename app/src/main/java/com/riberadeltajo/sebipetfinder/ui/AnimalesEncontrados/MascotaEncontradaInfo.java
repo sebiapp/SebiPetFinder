@@ -61,6 +61,11 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         TextView tvTelefono = findViewById(R.id.tvUsuario);
         mapView = findViewById(R.id.mapView);
         ImageView ivFoto = findViewById(R.id.ivFoto);
+        ivFoto.setOnClickListener(v -> {
+            Intent intent = new Intent(this, FullScreenImageActivity.class);
+            intent.putExtra("imageUrl", fotoUrl);
+            startActivity(intent);
+        });
         Button btnLlamar = findViewById(R.id.btnGuardar);
         Button btnCorreo = findViewById(R.id.emailButton);
 
