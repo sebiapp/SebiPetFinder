@@ -1,6 +1,9 @@
 package com.riberadeltajo.sebipetfinder.ui.AnimalesPerdidos;
 
+import android.location.Address;
+import android.location.Geocoder;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,7 +24,10 @@ import com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados.Mascota;
 import com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados.MascotaAdapter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -35,6 +41,7 @@ public class GalleryFragment extends Fragment {
     private Spinner spinnerCities;
     private RecyclerView recyclerView;
     private MascotaAdapter mascotaAdapter;
+    private Map<String, String> cityToCoordinates = new HashMap<>();
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -82,9 +89,37 @@ public class GalleryFragment extends Fragment {
             @Override
             public void onResponse(Call<List<String>> call, Response<List<String>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    List<String> cities = response.body();
-                    cities.add(0, "Todas las ciudades");
-                    ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, cities);
+                    List<String> coordinates = response.body();
+                    List<String> cities = new ArrayList<>();
+                    cities.add( "Todas las ciudades");
+
+                    Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
+
+                    for (String coordenada : coordinates) {
+                        try {
+                            String[] latLng = coordenada.split(",");
+                            double latitude = Double.parseDouble(latLng[0]);
+                            double longitude = Double.parseDouble(latLng[1]);
+
+                            List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
+                            if (!addresses.isEmpty() && addresses.get(0).getLocality() != null) {
+                                String cityName = addresses.get(0).getLocality();
+                                cityToCoordinates.put(cityName, coordenada); //Guarda la relación
+                                if (!cities.contains(cityName)) {
+                                    cities.add(cityName);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("Geocoding", "Error con coordenadas " + coordenada + ": " + e.getMessage());
+                        }
+                    }
+
+
+                    ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                            getContext(),
+                            android.R.layout.simple_spinner_dropdown_item,
+                            cities
+                    );
                     spinnerCities.setAdapter(adapter);
                 } else {
                     Toast.makeText(getContext(), "No se pudieron recuperar las ciudades", Toast.LENGTH_SHORT).show();
@@ -98,26 +133,47 @@ public class GalleryFragment extends Fragment {
         });
     }
 
-    private void loadMascotas(String city) {
+    private void loadMascotas(String cityName) {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         ApiService apiService = retrofit.create(ApiService.class);
-        Call<List<Mascota>> call;
-        if (city.isEmpty()) {
-            call = apiService.getMascotasEncontradas(); //Obtener todas las mascotas
-        } else {
-            call = apiService.getMascotasEncontradasByCity(city); //Filtrar por ciudad
-        }
+        Call<List<Mascota>> call = apiService.getMascotasEncontradas();
 
         call.enqueue(new Callback<List<Mascota>>() {
             @Override
             public void onResponse(Call<List<Mascota>> call, Response<List<Mascota>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    List<Mascota> mascotas = response.body();
-                    mascotaAdapter.updateMascotas(mascotas);
+                    List<Mascota> todasLasMascotas = response.body();
+
+                    if (cityName.isEmpty() || cityName.equals("Todas las ciudades")) {
+                        mascotaAdapter.updateMascotas(todasLasMascotas);
+                    } else {
+                        List<Mascota> mascotasFiltradas = new ArrayList<>();
+                        Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
+
+                        for (Mascota mascota : todasLasMascotas) {
+                            try {
+                                String[] coordenadas = mascota.getCiudad().split(",");
+                                double latitude = Double.parseDouble(coordenadas[0]);
+                                double longitude = Double.parseDouble(coordenadas[1]);
+
+                                List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
+                                if (!addresses.isEmpty() && addresses.get(0).getLocality() != null) {
+                                    String mascotaCityName = addresses.get(0).getLocality();
+                                    if (mascotaCityName.equals(cityName)) {
+                                        mascotasFiltradas.add(mascota);
+                                    }
+                                }
+                            } catch (Exception e) {
+                                Log.e("Geocoding", "Error al convertir coordenadas: " + e.getMessage());
+                            }
+                        }
+
+                        mascotaAdapter.updateMascotas(mascotasFiltradas);
+                    }
                 } else {
                     Toast.makeText(getContext(), "No se pudieron recuperar las mascotas", Toast.LENGTH_SHORT).show();
                 }

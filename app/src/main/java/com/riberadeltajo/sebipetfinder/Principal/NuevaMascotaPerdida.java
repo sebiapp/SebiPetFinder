@@ -69,6 +69,9 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 import org.osmdroid.views.overlay.Marker;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 import com.google.android.gms.maps.OnMapReadyCallback;
 public class NuevaMascotaPerdida extends AppCompatActivity implements OnMapReadyCallback {
@@ -338,7 +341,11 @@ public class NuevaMascotaPerdida extends AppCompatActivity implements OnMapReady
 
     private void subirImagen(Uri imageUri) {
         try {
-            File file = new File(getCacheDir(), "image.jpg");
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String fileName = "image_" + timestamp + ".jpg";
+
+            File file = new File(getCacheDir(), fileName);
+
             InputStream inputStream = getContentResolver().openInputStream(imageUri);
             FileOutputStream outputStream = new FileOutputStream(file);
             byte[] buffer = new byte[1024];
@@ -381,6 +388,7 @@ public class NuevaMascotaPerdida extends AppCompatActivity implements OnMapReady
             Toast.makeText(this, "Error al seleccionar la imagen", Toast.LENGTH_SHORT).show();
         }
     }
+
 
     private void guardarMascota() {
         String nombre = etNombre.getText().toString().trim();

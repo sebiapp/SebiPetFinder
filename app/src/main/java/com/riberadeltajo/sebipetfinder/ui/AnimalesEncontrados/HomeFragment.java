@@ -1,5 +1,10 @@
 package com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados;
 
+import android.app.AlertDialog;
+import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -10,7 +15,10 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -20,7 +28,10 @@ import com.riberadeltajo.sebipetfinder.R;
 import com.riberadeltajo.sebipetfinder.databinding.FragmentHomeBinding;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -34,12 +45,12 @@ public class HomeFragment extends Fragment {
     private Spinner spinnerCities;
     private RecyclerView recyclerView;
     private MascotaAdapter mascotaAdapter;
-
+    private Map<String, String> cityToCoordinates = new HashMap<>();
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
-
+        checkNotificationPermission();
         spinnerCities = root.findViewById(R.id.spinnerCities);
         recyclerView = binding.recyclerView;
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2)); //2 columnas
@@ -68,7 +79,38 @@ public class HomeFragment extends Fragment {
 
         return root;
     }
+    private void checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(requireContext(),
+                    android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
 
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("Permisos de Notificaciones")
+                        .setMessage("Para recibir notificaciones cuando alguien quiera contactar contigo sobre una mascota, necesitamos tu permiso para enviar notificaciones.")
+                        .setPositiveButton("Permitir", (dialog, which) -> {
+                            requestPermissionLauncher.launch(
+                                    android.Manifest.permission.POST_NOTIFICATIONS
+                            );
+                        })
+                        .setNegativeButton("Ahora no", null)
+                        .show();
+            }
+        }
+    }
+
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    Toast.makeText(requireContext(),
+                            "¡Gracias! Recibirás notificaciones cuando alguien quiera contactar contigo.",
+                            Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(requireContext(),
+                            "No recibirás notificaciones sobre contactos de tus mascotas.",
+                            Toast.LENGTH_LONG).show();
+                }
+            });
     private void loadCities() {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
@@ -81,9 +123,36 @@ public class HomeFragment extends Fragment {
             @Override
             public void onResponse(Call<List<String>> call, Response<List<String>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    List<String> cities = response.body();
-                    cities.add(0, "Todas las ciudades");
-                    ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, cities);
+                    List<String> coordinates = response.body();
+                    List<String> cities = new ArrayList<>();
+                    cities.add("Todas las ciudades");
+
+                    Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
+
+                    for (String coordenada : coordinates) {
+                        try {
+                            String[] latLng = coordenada.split(",");
+                            double latitude = Double.parseDouble(latLng[0]);
+                            double longitude = Double.parseDouble(latLng[1]);
+
+                            List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
+                            if (!addresses.isEmpty() && addresses.get(0).getLocality() != null) {
+                                String cityName = addresses.get(0).getLocality();
+                                cityToCoordinates.put(cityName, coordenada); //Guarda la relación
+                                if (!cities.contains(cityName)) {
+                                    cities.add(cityName);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("Geocoding", "Error con coordenadas " + coordenada + ": " + e.getMessage());
+                        }
+                    }
+
+                    ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                            getContext(),
+                            android.R.layout.simple_spinner_dropdown_item,
+                            cities
+                    );
                     spinnerCities.setAdapter(adapter);
                 } else {
                     Toast.makeText(getContext(), "No se pudieron recuperar las ciudades", Toast.LENGTH_SHORT).show();
@@ -97,26 +166,49 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    private void loadMascotas(String city) {
+    private void loadMascotas(String cityName) {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         ApiService apiService = retrofit.create(ApiService.class);
-        Call<List<Mascota>> call;
-        if (city.isEmpty()) {
-            call = apiService.getMascotas(); //Obtener todas las mascotas
-        } else {
-            call = apiService.getMascotasByCity(city); //Filtrar por ciudad
-        }
+        Call<List<Mascota>> call = apiService.getMascotas();
 
         call.enqueue(new Callback<List<Mascota>>() {
             @Override
             public void onResponse(Call<List<Mascota>> call, Response<List<Mascota>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    List<Mascota> mascotas = response.body();
-                    mascotaAdapter.updateMascotas(mascotas);
+                    List<Mascota> todasLasMascotas = response.body();
+
+                    if (cityName.isEmpty() || cityName.equals("Todas las ciudades")) {
+                        //Si no hay filtro, mostramos todas
+                        mascotaAdapter.updateMascotas(todasLasMascotas);
+                    } else {
+                        //Filtramos por ciudad usando el Geocoder
+                        List<Mascota> mascotasFiltradas = new ArrayList<>();
+                        Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
+
+                        for (Mascota mascota : todasLasMascotas) {
+                            try {
+                                String[] coordenadas = mascota.getCiudad().split(",");
+                                double latitude = Double.parseDouble(coordenadas[0]);
+                                double longitude = Double.parseDouble(coordenadas[1]);
+
+                                List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
+                                if (!addresses.isEmpty() && addresses.get(0).getLocality() != null) {
+                                    String mascotaCityName = addresses.get(0).getLocality();
+                                    if (mascotaCityName.equals(cityName)) {
+                                        mascotasFiltradas.add(mascota);
+                                    }
+                                }
+                            } catch (Exception e) {
+                                Log.e("Geocoding", "Error al convertir coordenadas: " + e.getMessage());
+                            }
+                        }
+
+                        mascotaAdapter.updateMascotas(mascotasFiltradas);
+                    }
                 } else {
                     Toast.makeText(getContext(), "No se pudieron recuperar las mascotas", Toast.LENGTH_SHORT).show();
                 }
