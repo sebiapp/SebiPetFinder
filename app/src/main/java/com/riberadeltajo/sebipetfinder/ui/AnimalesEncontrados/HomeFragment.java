@@ -1,6 +1,7 @@
 package com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -12,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -23,9 +25,14 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
 import com.riberadeltajo.sebipetfinder.R;
 import com.riberadeltajo.sebipetfinder.databinding.FragmentHomeBinding;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,6 +57,19 @@ public class HomeFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+        boolean isGoogleLogin = getContext()
+                .getSharedPreferences("user_data", Context.MODE_PRIVATE)
+                .getBoolean("isGoogleLogin", false);
+        if (isGoogleLogin) {
+            String username = getContext()
+                    .getSharedPreferences("user_data", Context.MODE_PRIVATE)
+                    .getString("username", null);
+
+            //Si no tiene nombre de usuario, mostrar el diálogo
+            if (username == null || username.isEmpty()) {
+                showUsernameDialog();
+            }
+        }
         checkNotificationPermission();
         spinnerCities = root.findViewById(R.id.spinnerCities);
         recyclerView = binding.recyclerView;
@@ -78,6 +98,87 @@ public class HomeFragment extends Fragment {
         });
 
         return root;
+    }
+    private void showUsernameDialog() {
+        EditText input = new EditText(getContext());
+        input.setHint("Nombre de usuario");
+        input.setSingleLine(true);
+        input.setMaxLines(1);
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("Asignar Nombre de Usuario")
+                .setMessage("Ya que has iniciado sesión con Google, necesitas asignar un nombre de usuario para tu cuenta:")
+                .setView(input)
+                .setCancelable(false)
+                .setPositiveButton("Guardar", (dialog, which) -> {
+                    String username = input.getText().toString().trim();
+                    if (username.isEmpty()) {
+                        showUsernameDialog();
+                        Toast.makeText(getContext(), "El nombre de usuario no puede estar vacío", Toast.LENGTH_SHORT).show();
+                    } else {
+                        updateUsername(username);
+                    }
+                })
+                .show();
+    }
+    private void updateUsername(String username) {
+        int userId = getContext()
+                .getSharedPreferences("user_data", Context.MODE_PRIVATE)
+                .getInt("userId", -1);
+
+        if (userId == -1) {
+            Toast.makeText(getContext(), "Error: Usuario no identificado", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        ApiService apiService = retrofit.create(ApiService.class);
+        Call<JsonObject> call = apiService.updateUsername(userId, username);
+
+        call.enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    JsonObject jsonResponse = response.body();
+                    String status = jsonResponse.get("status").getAsString();
+                    String message = jsonResponse.get("message").getAsString();
+
+                    if (status.equals("success")) {
+                        // Guardar en SharedPreferences
+                        getContext()
+                                .getSharedPreferences("user_data", Context.MODE_PRIVATE)
+                                .edit()
+                                .putString("username", username)
+                                .apply();
+                        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+                        showUsernameDialog();
+                    }
+                } else {
+                    try {
+                        String errorBody = response.errorBody().string();
+                        JsonObject errorJson = new Gson().fromJson(errorBody, JsonObject.class);
+                        String errorMessage = errorJson.get("message").getAsString();
+                        Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(getContext(), "Error al actualizar el nombre de usuario", Toast.LENGTH_SHORT).show();
+                    }
+                    showUsernameDialog();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Toast.makeText(getContext(), "Error de conexión: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.d("Error", t.getMessage());
+                showUsernameDialog();
+            }
+        });
     }
     private void checkNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

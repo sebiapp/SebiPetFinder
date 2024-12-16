@@ -3,10 +3,13 @@ package com.riberadeltajo.sebipetfinder.Principal;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.ClipData;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,9 +33,12 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.gson.JsonObject;
 import com.hbb20.CountryCodePicker;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
@@ -46,13 +52,21 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 import org.osmdroid.views.overlay.Marker;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -67,7 +81,7 @@ public class NuevaMascota extends AppCompatActivity {
     private String fotoUrl = "";
     private Uri selectedImageUri;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
-    private ImageView ivVistaPrevia;
+    //private ImageView ivVistaPrevia;
     private Uri uri;
     private static final int CAMERA_PERMISSION_CODE = 100;
     private static final int STORAGE_PERMISSION_CODE = 101;
@@ -78,6 +92,11 @@ public class NuevaMascota extends AppCompatActivity {
     private Marker currentMarker;
     private static final int LOCATION_PERMISSION_CODE = 102;
     private FusedLocationProviderClient fusedLocationClient;
+    //FOTOS 4
+    private List<Uri> selectedImageUris = new ArrayList<>();
+    private static final int MAX_FOTOS = 4;
+    private ViewPager2 viewPagerFotos;
+    private FotosPagerAdapter fotosPagerAdapter;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -102,7 +121,19 @@ public class NuevaMascota extends AppCompatActivity {
         //etCiudad = findViewById(R.id.etCiudad);
         btnSeleccionarFoto = findViewById(R.id.btnSeleccionarFoto);
         btnGuardarMascota = findViewById(R.id.btnGuardarMascota);
-        ivVistaPrevia = findViewById(R.id.ivVistaPrevia);
+        //ivVistaPrevia = findViewById(R.id.ivVistaPrevia);
+        // 4 FOTOS
+        viewPagerFotos = findViewById(R.id.viewPagerFotos);
+        fotosPagerAdapter = new FotosPagerAdapter(this, selectedImageUris);
+        viewPagerFotos.setAdapter(fotosPagerAdapter);
+
+        TabLayout tabLayout = findViewById(R.id.tabDots);
+        new TabLayoutMediator(tabLayout, viewPagerFotos,
+                (tab, position) -> {
+
+                }
+        ).attach();
+
         ccp = findViewById(R.id.ccp);
         ccp.registerCarrierNumberEditText(etTelefono);
         ccp.setDefaultCountryUsingNameCode("ES");
@@ -222,24 +253,220 @@ public class NuevaMascota extends AppCompatActivity {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        selectedImageUri = result.getData().getData();
-                        ivVistaPrevia.setImageURI(selectedImageUri);
+                        if (result.getData().getClipData() != null) {
+                            ClipData clipData = result.getData().getClipData();
+                            int countToAdd = Math.min(clipData.getItemCount(), MAX_FOTOS - selectedImageUris.size());
+
+                            for (int i = 0; i < countToAdd; i++) {
+                                Uri uri = clipData.getItemAt(i).getUri();
+                                selectedImageUris.add(uri);
+                            }
+
+                            if (clipData.getItemCount() > countToAdd) {
+                                Toast.makeText(this, "Solo se pueden seleccionar " + MAX_FOTOS + " fotos",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        } else if (result.getData().getData() != null && selectedImageUris.size() < MAX_FOTOS) {
+                            selectedImageUris.add(result.getData().getData());
+                        }
+
+                        actualizarVistaPrevia();
+                        actualizarBotonFotos();
                     }
                 }
         );
     }
-
-    private void configurarBotones() {
-        btnSeleccionarFoto.setOnClickListener(v -> mostrarOpcionesImagen());
-        btnGuardarMascota.setOnClickListener(v -> {
-            if (selectedImageUri != null) {
-                subirImagen(selectedImageUri);
-            } else {
-                Toast.makeText(this, "Selecciona una imagen antes de guardar", Toast.LENGTH_SHORT).show();
-            }
-        });
+    private void actualizarVistaPrevia() {
+        fotosPagerAdapter.updateFotos(selectedImageUris);
+        if (!selectedImageUris.isEmpty()) {
+            viewPagerFotos.setCurrentItem(selectedImageUris.size() - 1);
+        }
     }
 
+    private void actualizarBotonFotos() {
+        btnSeleccionarFoto.setText("Seleccionar Fotos (" + selectedImageUris.size() + "/" + MAX_FOTOS + ")");
+    }
+    private void configurarBotones() {
+        btnSeleccionarFoto.setOnClickListener(v -> {
+            if (!validarCamposBasicos()) {
+                return;
+            }
+            if (selectedImageUris.size() >= MAX_FOTOS) {
+                Toast.makeText(this, "Máximo " + MAX_FOTOS + " fotos permitidas", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            mostrarOpcionesImagen();
+        });
+
+        btnGuardarMascota.setOnClickListener(v -> {
+            if (!validarTodosCampos()) {
+                return;
+            }
+            if (selectedImageUris.isEmpty()) {
+                Toast.makeText(this, "Selecciona al menos una imagen antes de guardar",
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+            subirImagenes();
+        });
+    }
+    private boolean validarCamposBasicos() {
+        String nombre = etNombre.getText().toString().trim();
+        String descripcion = etDescripcion.getText().toString().trim();
+
+        if (nombre.isEmpty()) {
+            etNombre.setError("El nombre es obligatorio");
+            etNombre.requestFocus();
+            return false;
+        }
+
+        if (descripcion.isEmpty()) {
+            etDescripcion.setError("La descripción es obligatoria");
+            etDescripcion.requestFocus();
+            return false;
+        }
+
+        if (!ccp.isValidFullNumber()) {
+            etTelefono.setError("Número de teléfono inválido");
+            etTelefono.requestFocus();
+            return false;
+        }
+
+        return true;
+    }
+    private boolean validarTodosCampos() {
+        if (!validarCamposBasicos()) {
+            return false;
+        }
+
+        if (selectedLocation == null) {
+            Toast.makeText(this, "Por favor selecciona la ubicación en el mapa",
+                    Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        return true;
+    }
+    private void subirImagenes() {
+        List<String> fotosUrls = new ArrayList<>();
+        AtomicInteger contador = new AtomicInteger(0);
+        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Subiendo imágenes...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        //Configurar OkHttpClient con timeouts
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .build();
+
+        for (Uri imageUri : selectedImageUris) {
+            try {
+                String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+                String fileName = "image_" + timestamp + "_" + contador.get() + ".jpg";
+                File file = new File(getCacheDir(), fileName);
+
+                //Leer y comprimir la imagen
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+                bitmap = redimensionarImagen(bitmap, 800); //Reducir tamaño aún más
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 60, baos); //Reducir calidad a 60%
+                byte[] imageBytes = baos.toByteArray();
+                bitmap.recycle();
+                baos.close();
+
+                // Escribir bytes
+                FileOutputStream fos = new FileOutputStream(file);
+                fos.write(imageBytes);
+                fos.flush();
+                fos.close();
+
+                //Crear RequestBody directamente de los bytes
+                RequestBody requestBody = RequestBody.create(MediaType.parse("image/jpeg"), imageBytes);
+                MultipartBody.Part body = MultipartBody.Part.createFormData("image", fileName, requestBody);
+
+                Retrofit retrofit = new Retrofit.Builder()
+                        .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
+                        .client(client)
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .build();
+
+                ApiService apiService = retrofit.create(ApiService.class);
+                int currentCount = contador.get();
+                Call<JsonObject> call = apiService.uploadImage(body);
+
+                call.enqueue(new Callback<JsonObject>() {
+                    @Override
+                    public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                        try {
+                            if (response.isSuccessful() && response.body() != null) {
+                                String url = response.body().get("url").getAsString();
+                                fotosUrls.add(url);
+
+                                if (contador.incrementAndGet() == selectedImageUris.size()) {
+                                    progressDialog.dismiss();
+                                    fotoUrl = String.join(",", fotosUrls);
+                                    guardarMascota();
+                                }
+                            } else {
+                                progressDialog.dismiss();
+                                Toast.makeText(NuevaMascota.this,
+                                        "Error subiendo imagen " + (currentCount + 1),
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (Exception e) {
+                            progressDialog.dismiss();
+                            Log.e("SubirImagen", "Error procesando respuesta", e);
+                            Toast.makeText(NuevaMascota.this,
+                                    "Error al procesar la respuesta",
+                                    Toast.LENGTH_SHORT).show();
+                        } finally {
+                            if (file.exists()) {
+                                file.delete();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<JsonObject> call, Throwable t) {
+                        progressDialog.dismiss();
+                        Log.e("SubirImagen", "Error de red", t);
+                        Toast.makeText(NuevaMascota.this,
+                                "Error de conexión al subir imagen " + (currentCount + 1),
+                                Toast.LENGTH_SHORT).show();
+                        if (file.exists()) {
+                            file.delete();
+                        }
+                    }
+                });
+
+            } catch (Exception e) {
+                progressDialog.dismiss();
+                Log.e("SubirImagen", "Error general", e);
+                Toast.makeText(this, "Error procesando imagen " + (contador.get() + 1),
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private Bitmap redimensionarImagen(Bitmap imagen, int maxSize) {
+        int width = imagen.getWidth();
+        int height = imagen.getHeight();
+
+        float bitmapRatio = (float) width / (float) height;
+        if (bitmapRatio > 1) {
+            width = maxSize;
+            height = (int) (width / bitmapRatio);
+        } else {
+            height = maxSize;
+            width = (int) (height * bitmapRatio);
+        }
+
+        return Bitmap.createScaledBitmap(imagen, width, height, true);
+    }
     private void mostrarOpcionesImagen() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Seleccionar imagen");
@@ -346,59 +573,22 @@ public class NuevaMascota extends AppCompatActivity {
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK) {
-                    selectedImageUri = uri;
-                    ivVistaPrevia.setImageURI(uri);
+                    if (selectedImageUris.size() < MAX_FOTOS) {
+                        selectedImageUris.add(uri);
+                        actualizarVistaPrevia();
+                        actualizarBotonFotos();
+                    } else {
+                        Toast.makeText(this, "Máximo " + MAX_FOTOS + " fotos permitidas",
+                                Toast.LENGTH_SHORT).show();
+                    }
                 } else {
-                    Toast.makeText(NuevaMascota.this, "Cancelado por el usuario", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(NuevaMascota.this, "Cancelado por el usuario",
+                            Toast.LENGTH_SHORT).show();
                 }
             }
     );
 
-    private void subirImagen(Uri imageUri) {
-        try {
-            File file = new File(getCacheDir(), "image.jpg");
-            InputStream inputStream = getContentResolver().openInputStream(imageUri);
-            FileOutputStream outputStream = new FileOutputStream(file);
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inputStream.read(buffer)) > 0) {
-                outputStream.write(buffer, 0, length);
-            }
-            inputStream.close();
-            outputStream.close();
 
-            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
-            MultipartBody.Part body = MultipartBody.Part.createFormData("image", file.getName(), requestFile);
-
-            Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build();
-
-            ApiService apiService = retrofit.create(ApiService.class);
-            Call<JsonObject> call = apiService.uploadImage(body);
-            call.enqueue(new Callback<JsonObject>() {
-                @Override
-                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        fotoUrl = response.body().get("url").getAsString();
-                        guardarMascota();
-                    } else {
-                        Toast.makeText(NuevaMascota.this, "Error al subir la imagen", Toast.LENGTH_SHORT).show();
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<JsonObject> call, Throwable t) {
-                    Toast.makeText(NuevaMascota.this, "Error de conexión: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Error al seleccionar la imagen", Toast.LENGTH_SHORT).show();
-        }
-    }
 
     private void guardarMascota() {
         String nombre = etNombre.getText().toString().trim();

@@ -2,9 +2,11 @@ package com.riberadeltajo.sebipetfinder.ui.Perfil;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.view.View;
 
@@ -16,6 +18,7 @@ import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 
+import com.google.gson.JsonObject;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
 import com.riberadeltajo.sebipetfinder.Login.MainActivity;
 import com.riberadeltajo.sebipetfinder.R;
@@ -26,47 +29,159 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 public class PerfilInfo extends AppCompatActivity {
-    private EditText tvNombre, tvApellido, tvUsuario, tvEmail,tvContra;
+    private EditText tvNombre, tvApellido, tvUsuario, tvEmail, tvContra, edCodigo;
     private Executor executor;
     private BiometricPrompt biometricPrompt;
     private BiometricPrompt.PromptInfo promptInfo;
-    int id=0;
+    private Button btnEnviarCodigo, btnVerificar, btnReenviar, btnGuardar;
+    private TextView tvTemporizador;
+    private String codigoVerificacion;
+    private boolean isVerified = false;
+    private CountDownTimer countDownTimer;
+    int id = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_perfil_info);
 
-        Intent intent = new Intent();
-        id = getIntent().getIntExtra("id",0);
+        inicializarVistas();
+        cargarDatosIntent();
+        configurarListeners();
+    }
+    private void inicializarVistas() {
+        tvNombre = findViewById(R.id.tvNombre);
+        tvApellido = findViewById(R.id.tvApellido);
+        tvUsuario = findViewById(R.id.tvUsuario);
+        tvEmail = findViewById(R.id.tvCorreo);
+        tvContra = findViewById(R.id.tvContra);
+        edCodigo = findViewById(R.id.edCodigo);
+        btnEnviarCodigo = findViewById(R.id.btnEnviarCodigo);
+        btnVerificar = findViewById(R.id.btnVerificar);
+        btnReenviar = findViewById(R.id.btnReenviar);
+        btnGuardar = findViewById(R.id.btnGuardar);
+        tvTemporizador = findViewById(R.id.tvTemporizador);
+        Button btnBorrar = findViewById(R.id.btnBorrar);
+
+        // Configuración inicial
+        btnGuardar.setEnabled(false);
+        edCodigo.setEnabled(false);
+        btnVerificar.setVisibility(View.GONE);
+        btnReenviar.setVisibility(View.GONE);
+
+        btnGuardar.setOnClickListener(v -> editarUsuario());
+        btnBorrar.setOnClickListener(v -> borrarUsuario());
+    }
+    private void cargarDatosIntent() {
+        id = getIntent().getIntExtra("id", 0);
         String nom = getIntent().getStringExtra("nom");
         String ape = getIntent().getStringExtra("ape");
         String user = getIntent().getStringExtra("user");
         String email = getIntent().getStringExtra("email");
         String contra = getIntent().getStringExtra("contra");
 
-        tvNombre = findViewById(R.id.tvNombre);
-        tvApellido = findViewById(R.id.tvApellido);
-        tvUsuario = findViewById(R.id.tvUsuario);
-        tvEmail = findViewById(R.id.tvCorreo);
-        tvContra = findViewById(R.id.tvContra);
-        Button btnGuardar = findViewById(R.id.btnGuardar);
-        Button btnBorrar = findViewById(R.id.btnBorrar);
-
-
         tvNombre.setText(nom);
         tvApellido.setText(ape);
         tvUsuario.setText(user);
         tvEmail.setText(email);
         tvContra.setText(contra);
-        Log.d("id", String.valueOf(id));
-
-
+    }
+    private void configurarListeners() {
+        btnEnviarCodigo.setOnClickListener(v -> enviarCodigoVerificacion());
+        btnVerificar.setOnClickListener(v -> verificarCodigo());
+        btnReenviar.setOnClickListener(v -> {
+            btnReenviar.setVisibility(View.GONE);
+            enviarCodigoVerificacion();
+        });
         btnGuardar.setOnClickListener(v -> editarUsuario());
-        btnBorrar.setOnClickListener(v -> borrarUsuario());
+    }
+    private void enviarCodigoVerificacion() {
+        String email = tvEmail.getText().toString().trim();
+
+        if (email.isEmpty()) {
+            Toast.makeText(this, "Ingrese un correo electrónico", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!validarCorreo(email)) {
+            return;
+        }
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        ApiService apiService = retrofit.create(ApiService.class);
+        Call<JsonObject> call = apiService.enviarCodigo(email);
+
+        call.enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    JsonObject jsonResponse = response.body();
+                    if (jsonResponse.has("code")) {
+                        codigoVerificacion = jsonResponse.get("code").getAsString();
+                        edCodigo.setEnabled(true);
+                        btnEnviarCodigo.setVisibility(View.GONE);
+                        btnVerificar.setVisibility(View.VISIBLE);
+                        iniciarTemporizador();
+                        Toast.makeText(PerfilInfo.this, "Código enviado", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(PerfilInfo.this, "Error en la respuesta del servidor", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Toast.makeText(PerfilInfo.this, "Error de conexión: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void verificarCodigo() {
+        String codigoIngresado = edCodigo.getText().toString().trim();
+        if (codigoIngresado.equals(codigoVerificacion)) {
+            isVerified = true;
+            btnGuardar.setEnabled(true);
+            btnVerificar.setEnabled(false);
+            btnReenviar.setVisibility(View.GONE);
+            edCodigo.setEnabled(false);
+
+            tvEmail.setEnabled(false);
+            tvEmail.setFocusable(false);
+            tvEmail.setFocusableInTouchMode(false);
+
+            if (countDownTimer != null) {
+                countDownTimer.cancel();
+            }
+            tvTemporizador.setText("¡Código verificado!");
+            Toast.makeText(this, "Código verificado correctamente", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Código incorrecto", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void iniciarTemporizador() {
+        btnReenviar.setVisibility(View.GONE);
+        countDownTimer = new CountDownTimer(60000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                tvTemporizador.setText("Espera " + millisUntilFinished / 1000 + "s para reenviar");
+            }
+
+            @Override
+            public void onFinish() {
+                tvTemporizador.setText("");
+                if (!isVerified) {
+                    btnReenviar.setVisibility(View.VISIBLE);
+                }
+            }
+        }.start();
     }
     /* COMPROBAR SI TIENE DISPONIBILIDAD DE HUELLA EL DISPOSITIVO */
     private void comprobarDisponibilidadBiometrica() {
@@ -226,7 +341,10 @@ public class PerfilInfo extends AppCompatActivity {
             tvUsuario.requestFocus();
             return;
         }
-
+        if (!isVerified) {
+            Toast.makeText(this, "Debe verificar su correo primero", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (!validarCorreo(email)) {
             return;
         }

@@ -9,6 +9,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
 
@@ -97,16 +100,22 @@ public class MainPanelActivity extends AppCompatActivity {
                     .setPositiveButton("Sí", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            // Cerrar sesión
-                            SharedPreferences preferences = getSharedPreferences("login_prefs", MODE_PRIVATE);
-                            SharedPreferences.Editor editor = preferences.edit();
-                            editor.clear();
-                            editor.apply();
+                            //Cerrar sesión de Google
+                            GoogleSignInClient googleSignInClient = GoogleSignIn.getClient(MainPanelActivity.this,
+                                    new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build());
+                            googleSignInClient.signOut().addOnCompleteListener(task -> {
+                                //Limpiar SharedPreferences
+                                SharedPreferences preferences = getSharedPreferences("login_prefs", MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.clear();
+                                editor.apply();
 
-                            Intent intent = new Intent(MainPanelActivity.this, MainActivity.class);
-                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            startActivity(intent);
-                            finish();
+                                //login
+                                Intent intent = new Intent(MainPanelActivity.this, MainActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                startActivity(intent);
+                                finish();
+                            });
                         }
                     })
                     .setNegativeButton("No", null)
@@ -115,6 +124,7 @@ public class MainPanelActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
     @Override
     public boolean onSupportNavigateUp() {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main_panel);

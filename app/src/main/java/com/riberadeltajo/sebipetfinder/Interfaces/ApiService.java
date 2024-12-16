@@ -99,7 +99,9 @@ public interface ApiService {
             @Field("mascota_id") int mascotaId,
             @Field("nombre") String nombre,
             @Field("descripcion") String descripcion,
-            @Field("telefono") String telefono
+            @Field("telefono") String telefono,
+            @Field("ciudad") String ciudad,
+            @Field("fotoUrl") String fotoUrl
     );
     /* EDITAR MASCOTA ENCONTRADA */
     @FormUrlEncoded
@@ -108,7 +110,9 @@ public interface ApiService {
             @Field("mascota_id") int mascotaId,
             @Field("nombre") String nombre,
             @Field("descripcion") String descripcion,
-            @Field("telefono") String telefono
+            @Field("telefono") String telefono,
+            @Field("ciudad") String ciudad,
+            @Field("fotoUrl") String fotoUrl
     );
     /* EDITAR USUARIO */
     @FormUrlEncoded
@@ -166,4 +170,8 @@ public interface ApiService {
             @Field("anuncio_id") String anuncioId,
             @Field("tipo") String tipo
     );
+    @FormUrlEncoded
+    @POST("update_username.php")
+    Call<JsonObject> updateUsername(@Field("user_id") int userId,
+                                    @Field("username") String username);
 }

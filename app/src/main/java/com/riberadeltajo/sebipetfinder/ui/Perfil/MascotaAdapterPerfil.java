@@ -1,5 +1,6 @@
 package com.riberadeltajo.sebipetfinder.ui.Perfil;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.view.LayoutInflater;
@@ -11,15 +12,16 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.riberadeltajo.sebipetfinder.R;
+import com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados.Mascota;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
 public class MascotaAdapterPerfil extends RecyclerView.Adapter<MascotaAdapterPerfil.ViewHolder> {
-    private List<MascotaPerfil> mascotas;
+    private List<Mascota> mascotas;
     private Context context;
 
-    public MascotaAdapterPerfil(Context context, List<MascotaPerfil> mascotas) {
+    public MascotaAdapterPerfil(Context context, List<Mascota> mascotas) {
         this.context = context;
         this.mascotas = mascotas;
     }
@@ -32,9 +34,25 @@ public class MascotaAdapterPerfil extends RecyclerView.Adapter<MascotaAdapterPer
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        MascotaPerfil mascota = mascotas.get(position);
+        Mascota mascota = mascotas.get(position);
         holder.textViewNombre.setText(mascota.getNombre());
-        Picasso.get().load(mascota.getFotoUrl()).into(holder.imageViewFoto);
+
+        //Obtener solo la primera foto de la cadena
+        String fotoUrl = mascota.getFotoUrl();
+        if (fotoUrl != null && !fotoUrl.isEmpty()) {
+            String[] fotos = fotoUrl.split(",");
+            if (fotos.length > 0) {
+                String primeraFoto = fotos[0].trim();
+                if (!primeraFoto.startsWith("http")) {
+                    primeraFoto = "https://sienna-coyote-339198.hostingersite.com/" + primeraFoto;
+                }
+                Picasso.get()
+                        .load(primeraFoto)
+                        .fit()
+                        .centerCrop()
+                        .into(holder.imageViewFoto);
+            }
+        }
     }
 
     @Override
@@ -42,7 +60,7 @@ public class MascotaAdapterPerfil extends RecyclerView.Adapter<MascotaAdapterPer
         return mascotas.size();
     }
 
-    public void updateMascotas(List<MascotaPerfil> newMascotas) {
+    public void updateMascotas(List<Mascota> newMascotas) {
         this.mascotas.clear();
         this.mascotas.addAll(newMascotas);
         notifyDataSetChanged();
@@ -52,7 +70,7 @@ public class MascotaAdapterPerfil extends RecyclerView.Adapter<MascotaAdapterPer
         ImageView imageViewFoto;
         TextView textViewNombre;
 
-        public ViewHolder(View itemView, Context context, List<MascotaPerfil> mascotas) {
+        public ViewHolder(View itemView, Context context, List<Mascota> mascotas) {
             super(itemView);
             imageViewFoto = itemView.findViewById(R.id.imageViewFoto);
             textViewNombre = itemView.findViewById(R.id.textViewNombre);
@@ -60,7 +78,7 @@ public class MascotaAdapterPerfil extends RecyclerView.Adapter<MascotaAdapterPer
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
-                    MascotaPerfil selectedMascota = mascotas.get(position);
+                    Mascota selectedMascota = mascotas.get(position);
                     Intent intent = new Intent(context, AnuncioInfo.class);
                     intent.putExtra("mascotaId", selectedMascota.getId());
                     intent.putExtra("isMascotaPerdida", selectedMascota.isMascotaPerdida());
@@ -69,7 +87,7 @@ public class MascotaAdapterPerfil extends RecyclerView.Adapter<MascotaAdapterPer
                     intent.putExtra("fotoUrl", selectedMascota.getFotoUrl());
                     intent.putExtra("telefono", selectedMascota.getTelefono());
                     intent.putExtra("ciudad", selectedMascota.getCiudad());
-                    context.startActivity(intent);
+                    ((Activity) context).startActivityForResult(intent, 1001);
                 }
             });
         }

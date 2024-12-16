@@ -2,7 +2,9 @@ package com.riberadeltajo.sebipetfinder.ui.Perfil;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,7 +15,10 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.contract.ActivityResultContract;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -22,6 +27,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.gson.JsonObject;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
 import com.riberadeltajo.sebipetfinder.databinding.FragmentSlideshowBinding;
+import com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados.Mascota;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,7 +72,6 @@ public class SlideshowFragment extends Fragment {
         loadAnuncios();
 
         btnGestionar.setOnClickListener(new View.OnClickListener() {
-
             @Override
             public void onClick(View view) {
                 boolean isGoogleLogin = getContext()
@@ -94,8 +99,24 @@ public class SlideshowFragment extends Fragment {
 
             }
         });
+        //Registrar el fragmento para recibir resultados de actividad
+        requireActivity().getActivityResultRegistry()
+                .register("anuncio_key", new ActivityResultContract<Intent, ActivityResult>() {
+                    @NonNull
+                    @Override
+                    public Intent createIntent(@NonNull Context context, Intent input) {
+                        return input;
+                    }
 
-
+                    @Override
+                    public ActivityResult parseResult(int resultCode, @Nullable Intent intent) {
+                        return new ActivityResult(resultCode, intent);
+                    }
+                }, result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        loadAnuncios();
+                    }
+                });
         return root;
     }
 
@@ -152,16 +173,17 @@ public class SlideshowFragment extends Fragment {
             public void onResponse(Call<List<JsonObject>> call, Response<List<JsonObject>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<JsonObject> anunciosJson = response.body();
-                    List<MascotaPerfil> anuncios = new ArrayList<>();
+                    List<Mascota> anuncios = new ArrayList<>();
 
                     for (JsonObject anuncioJson : anunciosJson) {
-                        MascotaPerfil mascota = new MascotaPerfil(
+                        Mascota mascota = new Mascota(
                                 anuncioJson.get("id").getAsInt(),
                                 anuncioJson.get("nombre").getAsString(),
                                 anuncioJson.get("descripcion").getAsString(),
                                 anuncioJson.get("fotoUrl").getAsString(),
                                 anuncioJson.get("telefono").getAsString(),
                                 anuncioJson.get("ciudad").getAsString(),
+                                String.valueOf(userId),
                                 anuncioJson.get("isMascotaPerdida").getAsInt()
                         );
                         anuncios.add(mascota);
@@ -181,7 +203,14 @@ public class SlideshowFragment extends Fragment {
             }
         });
     }
-
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1001 && resultCode == Activity.RESULT_OK) {
+            // Recargar los anuncios
+            loadAnuncios();
+        }
+    }
     @Override
     public void onDestroyView() {
         super.onDestroyView();

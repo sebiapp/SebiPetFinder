@@ -33,7 +33,23 @@ public class MascotaAdapter extends RecyclerView.Adapter<MascotaAdapter.ViewHold
     public void onBindViewHolder(ViewHolder holder, int position) {
         Mascota mascota = mascotas.get(position);
         holder.textViewNombre.setText(mascota.getNombre());
-        Picasso.get().load(mascota.getFotoUrl()).into(holder.imageViewFoto);
+
+        //Obtener solo la primera foto de la cadena
+        String fotoUrl = mascota.getFotoUrl();
+        if (fotoUrl != null && !fotoUrl.isEmpty()) {
+            String[] fotos = fotoUrl.split(",");
+            if (fotos.length > 0) {
+                String primeraFoto = fotos[0].trim();
+                if (!primeraFoto.startsWith("http")) {
+                    primeraFoto = "https://sienna-coyote-339198.hostingersite.com/" + primeraFoto;
+                }
+                Picasso.get()
+                        .load(primeraFoto)
+                        .fit()
+                        .centerCrop()
+                        .into(holder.imageViewFoto);
+            }
+        }
     }
 
     @Override

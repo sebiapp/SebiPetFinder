@@ -4,12 +4,17 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import androidx.viewpager2.widget.ViewPager2;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.viewpager2.widget.ViewPager2;
+
 import android.content.Context;
 import android.preference.PreferenceManager;
 import org.osmdroid.config.Configuration;
@@ -17,10 +22,16 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
+
+import com.riberadeltajo.sebipetfinder.Principal.FotosPagerAdapter;
 import com.riberadeltajo.sebipetfinder.R;
 import com.squareup.picasso.Picasso;
 import com.google.gson.JsonObject;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -31,6 +42,9 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
     private MapView mapView;
     private ApiService apiService;
     private String anuncioId;
+    private ViewPager2 viewPagerFotos;
+    private FotosUrlPagerAdapter fotosUrlPagerAdapter;
+    private List<Uri> fotosList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,7 +55,6 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
 
         setContentView(R.layout.activity_mascota_encontrada_info);
 
-        // Inicializar Retrofit y apiService
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -60,12 +73,47 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         TextView tvDescripcion = findViewById(R.id.tvApellido);
         TextView tvTelefono = findViewById(R.id.tvUsuario);
         mapView = findViewById(R.id.mapView);
-        ImageView ivFoto = findViewById(R.id.ivFoto);
-        ivFoto.setOnClickListener(v -> {
-            Intent intent = new Intent(this, FullScreenImageActivity.class);
-            intent.putExtra("imageUrl", fotoUrl);
-            startActivity(intent);
-        });
+
+        //Configurar ViewPager para las fotos
+        viewPagerFotos = findViewById(R.id.viewPagerFotos);
+        TabLayout tabLayout = findViewById(R.id.tabDots);
+
+        //Configurar fotos
+        if (fotoUrl != null && !fotoUrl.isEmpty()) {
+            String[] fotosUrls = fotoUrl.split(",");
+
+            //Eliminar espacios en blanco al inicio y final de cada URL
+            for (int i = 0; i < fotosUrls.length; i++) {
+                fotosUrls[i] = fotosUrls[i].trim();
+            }
+            //Crear y configurar el adaptador
+            fotosUrlPagerAdapter = new FotosUrlPagerAdapter(this, fotosUrls);
+            viewPagerFotos.setAdapter(fotosUrlPagerAdapter);
+
+            //Configurar los dots indicadores solo si hay más de una foto
+            if (fotosUrls.length > 1) {
+                tabLayout.setVisibility(View.VISIBLE);
+                new TabLayoutMediator(tabLayout, viewPagerFotos,
+                        (tab, position) -> {
+                    //NADA
+                        }
+                ).attach();
+            } else {
+                tabLayout.setVisibility(View.GONE);
+            }
+        } else {
+            viewPagerFotos.setVisibility(View.GONE);
+            tabLayout.setVisibility(View.GONE);
+        }
+        View overlayView = findViewById(R.id.clickOverlay);
+        if (overlayView != null) {
+            overlayView.setOnClickListener(v -> {
+                Intent intent = new Intent(this, FullScreenImageActivity.class);
+                intent.putExtra("imageUrl", fotoUrl);
+                intent.putExtra("position", viewPagerFotos.getCurrentItem()); //Pasar la posición actual
+                startActivity(intent);
+            });
+        }
         Button btnLlamar = findViewById(R.id.btnGuardar);
         Button btnCorreo = findViewById(R.id.emailButton);
 
@@ -99,9 +147,7 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-        if (fotoUrl != null && !fotoUrl.isEmpty()) {
-            Picasso.get().load(fotoUrl).into(ivFoto);
-        }
+
 
         btnLlamar.setOnClickListener(v -> {
             if (telefono != null && !telefono.isEmpty()) {

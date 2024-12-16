@@ -37,14 +37,14 @@
             <EditText
                 android:id="@+id/edUsuario"
                 android:layout_width="match_parent"
-                android:text="messi"
                 android:layout_height="50dp"
                 android:layout_marginTop="40dp"
                 android:background="@drawable/custom_edittext"
-                android:drawableLeft="@drawable/baseline_person_24"
+                android:drawableLeft="@drawable/baseline_email_24"
                 android:drawablePadding="8dp"
-                android:hint="Usuario"
+                android:hint="ejemplo@gmail.com"
                 android:padding="8dp"
+                android:text="messi@gmail.com"
                 android:textColor="@color/black" />
 
             <LinearLayout

@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
-    tools:context=".ui.Perfil.PerfilInfo">
-
+    android:fillViewport="true">
+    <androidx.constraintlayout.widget.ConstraintLayout xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:context=".ui.Perfil.PerfilInfo">
     <EditText
         android:id="@+id/tvContra"
         android:layout_width="411dp"
@@ -118,7 +119,74 @@
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvUsuario" />
+    <LinearLayout
+        android:id="@+id/layoutVerificacion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="vertical"
+        app:layout_constraintTop_toBottomOf="@+id/tvContra">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/edCodigo"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="2"
+                android:maxLength="6"
+                android:background="@drawable/custom_edittext"
+                android:drawableLeft="@drawable/baseline_lock_24"
+                android:drawablePadding="8dp"
+                android:hint="Código"
+                android:inputType="number"
+                android:padding="8dp"
+                android:textColor="@color/black" />
+
+            <Button
+                android:id="@+id/btnVerificar"
+                android:layout_width="86dp"
+                android:layout_height="50dp"
+                android:layout_marginLeft="8dp"
+                android:layout_weight="1"
+                android:backgroundTint="@color/purple"
+                android:text="Verificar"
+                android:visibility="gone"
+                app:cornerRadius="20dp" />
+
+            <Button
+                android:id="@+id/btnEnviarCodigo"
+                android:layout_width="86dp"
+                android:layout_height="50dp"
+                android:layout_marginLeft="8dp"
+                android:layout_weight="1"
+                android:backgroundTint="@color/purple"
+                android:text="Enviar código"
+                app:cornerRadius="20dp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnReenviar"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@color/purple"
+            android:text="Reenviar código"
+            android:visibility="gone"
+            app:cornerRadius="20dp" />
+
+        <TextView
+            android:id="@+id/tvTemporizador"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textAlignment="center"
+            android:textColor="@color/purple"
+            android:textSize="14sp" />
+    </LinearLayout>
     <Button
         android:id="@+id/btnGuardar"
         android:layout_width="match_parent"
@@ -133,6 +201,7 @@
         app:cornerRadius="20dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvContra" />
+        app:layout_constraintTop_toBottomOf="@+id/layoutVerificacion" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

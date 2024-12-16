@@ -187,10 +187,14 @@ public class RegisterActivity extends AppCompatActivity {
         String codigoIngresado = edCodigo.getText().toString().trim();
         if (codigoIngresado.equals(codigoVerificacion)) {
             isVerified = true;
-            registerButton.setEnabled(true);
+            btnVerificar.setEnabled(true);
             btnVerificar.setEnabled(false);
             btnReenviar.setVisibility(View.GONE);
             edCodigo.setEnabled(false);
+
+            edEmail.setEnabled(false);
+            edEmail.setFocusable(false);
+            edEmail.setFocusableInTouchMode(false);
             if (countDownTimer != null) {
                 countDownTimer.cancel();
             }
