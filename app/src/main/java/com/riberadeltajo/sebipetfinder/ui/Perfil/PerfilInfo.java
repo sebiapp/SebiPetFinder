@@ -21,6 +21,7 @@ import androidx.core.content.ContextCompat;
 import com.google.gson.JsonObject;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
 import com.riberadeltajo.sebipetfinder.Login.MainActivity;
+import com.riberadeltajo.sebipetfinder.Login.SecurityUtils;
 import com.riberadeltajo.sebipetfinder.R;
 
 import java.util.concurrent.Executor;
@@ -67,7 +68,7 @@ public class PerfilInfo extends AppCompatActivity {
         tvTemporizador = findViewById(R.id.tvTemporizador);
         Button btnBorrar = findViewById(R.id.btnBorrar);
 
-        // Configuración inicial
+        //Configuración inicial
         btnGuardar.setEnabled(false);
         edCodigo.setEnabled(false);
         btnVerificar.setVisibility(View.GONE);
@@ -83,12 +84,17 @@ public class PerfilInfo extends AppCompatActivity {
         String user = getIntent().getStringExtra("user");
         String email = getIntent().getStringExtra("email");
         String contra = getIntent().getStringExtra("contra");
-
+        tvContra.setHint("Nueva contraseña(Opcional" +
+                ")");
         tvNombre.setText(nom);
         tvApellido.setText(ape);
         tvUsuario.setText(user);
         tvEmail.setText(email);
-        tvContra.setText(contra);
+
+        tvEmail.setEnabled(false);
+        tvEmail.setFocusable(false);
+        tvEmail.setFocusableInTouchMode(false);
+        //tvContra.setText(contra);
     }
     private void configurarListeners() {
         btnEnviarCodigo.setOnClickListener(v -> enviarCodigoVerificacion());
@@ -152,9 +158,9 @@ public class PerfilInfo extends AppCompatActivity {
             btnReenviar.setVisibility(View.GONE);
             edCodigo.setEnabled(false);
 
-            tvEmail.setEnabled(false);
-            tvEmail.setFocusable(false);
-            tvEmail.setFocusableInTouchMode(false);
+            tvEmail.setEnabled(true);
+            tvEmail.setFocusable(true);
+            tvEmail.setFocusableInTouchMode(true);
 
             if (countDownTimer != null) {
                 countDownTimer.cancel();
@@ -359,7 +365,9 @@ public class PerfilInfo extends AppCompatActivity {
 
         ApiService apiService = retrofit.create(ApiService.class);
 
-        Call<String> call = apiService.editarUsuario(id, nombre, apellido, usuario, email, contra);
+        String contraFinal = contra.isEmpty() ? "" : SecurityUtils.hashPassword(contra);
+
+        Call<String> call = apiService.editarUsuario(id, nombre, apellido, usuario, email, contraFinal);
         call.enqueue(new Callback<String>() {
             @Override
             public void onResponse(Call<String> call, Response<String> response) {
@@ -410,6 +418,9 @@ public class PerfilInfo extends AppCompatActivity {
     }
 
     private boolean validarContrasena(String password) {
+        if (password.isEmpty()) {
+            return true;
+        }
         StringBuilder feedback = new StringBuilder();
         boolean isValid = true;
 

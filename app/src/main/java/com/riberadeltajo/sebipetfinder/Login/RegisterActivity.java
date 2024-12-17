@@ -215,6 +215,12 @@ public class RegisterActivity extends AppCompatActivity {
         String user_lastname = edLast_name.getText().toString().trim();
         String username = edUsername.getText().toString().trim();
         String password = edPassword.getText().toString().trim();
+        // Encriptar la contraseña
+        String hashedPassword = SecurityUtils.hashPassword(password);
+        if (hashedPassword == null) {
+            Toast.makeText(this, "Error al procesar la contraseña", Toast.LENGTH_SHORT).show();
+            return;
+        }
         String email = edEmail.getText().toString().trim();
 
         if (user_name.isEmpty() || user_lastname.isEmpty() || username.isEmpty() ||
@@ -229,7 +235,7 @@ public class RegisterActivity extends AppCompatActivity {
                 .build();
 
         ApiService apiService = retrofit.create(ApiService.class);
-        Call<String> call = apiService.registerUser(user_name, user_lastname, username, email, password);
+        Call<String> call = apiService.registerUser(user_name, user_lastname, username, email, hashedPassword);
         call.enqueue(new Callback<String>() {
             @Override
             public void onResponse(Call<String> call, Response<String> response) {

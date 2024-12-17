@@ -202,6 +202,13 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d("LoginActivity", "Username: " + username + ", Password: " + password);
 
+        // Encriptar la contraseña
+        String hashedPassword = SecurityUtils.hashPassword(password);
+        if (hashedPassword == null) {
+            Toast.makeText(this, "Error al procesar la contraseña", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Log.d("Contra",hashedPassword);
         //Retrofit
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://sienna-coyote-339198.hostingersite.com/")
@@ -209,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         ApiService apiService = retrofit.create(ApiService.class);
-        Call<String> call = apiService.loginUser(username, password);
+        Call<String> call = apiService.loginUser(username, hashedPassword);
         call.enqueue(new Callback<String>() {
             @Override
             public void onResponse(Call<String> call, Response<String> response) {

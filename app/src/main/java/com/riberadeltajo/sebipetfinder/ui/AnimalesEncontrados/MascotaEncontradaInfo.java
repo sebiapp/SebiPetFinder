@@ -1,14 +1,20 @@
 package com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.core.content.FileProvider;
 import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
@@ -29,6 +35,8 @@ import com.squareup.picasso.Picasso;
 import com.google.gson.JsonObject;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,6 +53,7 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
     private ViewPager2 viewPagerFotos;
     private FotosUrlPagerAdapter fotosUrlPagerAdapter;
     private List<Uri> fotosList = new ArrayList<>();
+    private String nombre,descripcion;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,8 +71,8 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         apiService = retrofit.create(ApiService.class);
 
 
-        String nombre = getIntent().getStringExtra("nombre");
-        String descripcion = getIntent().getStringExtra("descripcion");
+        nombre = getIntent().getStringExtra("nombre");
+        descripcion = getIntent().getStringExtra("descripcion");
         String fotoUrl = getIntent().getStringExtra("fotoUrl");
         String telefono = getIntent().getStringExtra("telefono");
         String ciudad = getIntent().getStringExtra("ciudad");
@@ -127,7 +136,8 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         }
         Button btnLlamar = findViewById(R.id.btnGuardar);
         Button btnCorreo = findViewById(R.id.emailButton);
-
+        Button btnCompartir = findViewById(R.id.shareButton);
+        btnCompartir.setOnClickListener(v -> captureAndShareScreen());
         tvNombre.setText(String.format("Nombre: %s", nombre));
         tvDescripcion.setText(String.format("Descripción: %s", descripcion));
         tvTelefono.setText(String.format("Teléfono: %s", telefono));
@@ -230,6 +240,81 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         }
     }
 
+    //COMPARTIR EN REDES
+    private void captureAndShareScreen() {
 
+        ScrollView scrollView = findViewById(R.id.rootScrollView);
+
+        //Crear un bitmap del tamaño total del contenido
+        Bitmap bitmap = getBitmapFromScrollView(scrollView);
+
+        if (bitmap != null) {
+            shareScreenshot(bitmap);
+        } else {
+            Toast.makeText(this, "Error al crear la captura", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private Bitmap getBitmapFromScrollView(ScrollView scrollView) {
+        try {
+            //Obtener las dimensiones totales del contenido
+            int totalHeight = scrollView.getChildAt(0).getHeight();
+            int totalWidth = scrollView.getWidth();
+
+            //Crear un bitmap del tamaño total
+            Bitmap bitmap = Bitmap.createBitmap(totalWidth, totalHeight, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+
+            //Guardar el estado actual del ScrollView
+            int originalScrollY = scrollView.getScrollY();
+
+            //Forzar al ScrollView a scrollear al inicio
+            scrollView.scrollTo(0, 0);
+
+            //Dibujar el fondo
+            canvas.drawColor(Color.WHITE);
+
+            //Dibujar la vista completa
+            scrollView.draw(canvas);
+
+            //Restaurar la posición original del scroll
+            scrollView.scrollTo(0, originalScrollY);
+
+            return bitmap;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private void shareScreenshot(Bitmap bitmap) {
+        try {
+            //Comprimir con mejor calidad
+            File cachePath = new File(getCacheDir(), "images");
+            cachePath.mkdirs();
+            File imageFile = new File(cachePath, "shared_image.jpg"); //Cambiado a JPG
+            FileOutputStream stream = new FileOutputStream(imageFile);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, stream); //Usar JPEG con alta calidad
+            stream.flush();
+            stream.close();
+
+            Uri contentUri = FileProvider.getUriForFile(this,
+                    "com.riberadeltajo.sebipetfinder.fileprovider", imageFile);
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("image/jpeg");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            String shareText = String.format("¡Mira esta mascota encontrada!\n\nNombre: %s\nDescripción: %s",
+                    nombre, descripcion);
+            shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+
+            startActivity(Intent.createChooser(shareIntent, "Compartir anuncio"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error al compartir la imagen", Toast.LENGTH_SHORT).show();
+        }
+    }
 
 }

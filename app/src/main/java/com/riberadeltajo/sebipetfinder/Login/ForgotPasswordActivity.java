@@ -191,7 +191,13 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     }
 
     private void actualizarContrasena(String email, String nuevaPassword) {
-        Call<JsonObject> call = apiService.actualizarContrasena(email, nuevaPassword);
+        // Encriptar la contraseña
+        String hashedPassword = SecurityUtils.hashPassword(nuevaPassword);
+        if (hashedPassword == null) {
+            Toast.makeText(this, "Error al procesar la contraseña", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Call<JsonObject> call = apiService.actualizarContrasena(email, hashedPassword);
         call.enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
