@@ -67,11 +67,22 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         String fotoUrl = getIntent().getStringExtra("fotoUrl");
         String telefono = getIntent().getStringExtra("telefono");
         String ciudad = getIntent().getStringExtra("ciudad");
+        String tipoMascota = getIntent().getStringExtra("tipoMascota");
+        String color = getIntent().getStringExtra("color");
+        String raza = getIntent().getStringExtra("raza");
+        String sexo = getIntent().getStringExtra("sexo");
+        String tamano = getIntent().getStringExtra("tamano");
         anuncioId = getIntent().getStringExtra("anuncioId");
+
         Log.d("ID ANUNCIO ",anuncioId);
         TextView tvNombre = findViewById(R.id.tvNombre);
         TextView tvDescripcion = findViewById(R.id.tvApellido);
         TextView tvTelefono = findViewById(R.id.tvUsuario);
+        TextView tvTipoMascota = findViewById(R.id.tvTipoMascota);
+        TextView tvRaza = findViewById(R.id.tvRaza);
+        TextView tvColor = findViewById(R.id.tvColor);
+        TextView tvSexo = findViewById(R.id.tvSexo);
+        TextView tvTamano = findViewById(R.id.tvTamano);
         mapView = findViewById(R.id.mapView);
 
         //Configurar ViewPager para las fotos
@@ -120,6 +131,11 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         tvNombre.setText(String.format("Nombre: %s", nombre));
         tvDescripcion.setText(String.format("Descripción: %s", descripcion));
         tvTelefono.setText(String.format("Teléfono: %s", telefono));
+        tvTipoMascota.setText(String.format("Tipo: %s", tipoMascota));
+        tvRaza.setText(String.format("Raza: %s", raza));
+        tvColor.setText(String.format("Color: %s", color));
+        tvSexo.setText(String.format("Sexo: %s", sexo));
+        tvTamano.setText(String.format("Tamaño: %s", tamano));
         //tvCiudad.setText(String.format("Ciudad: %s", ciudad));
         if (ciudad != null && !ciudad.isEmpty()) {
             try {

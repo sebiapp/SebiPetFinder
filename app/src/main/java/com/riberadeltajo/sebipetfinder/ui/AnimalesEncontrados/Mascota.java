@@ -9,8 +9,13 @@ public class Mascota {
     private String ciudad;
     private String user_id;
     private int isMascotaPerdida;
+    private String tipo_mascota;
+    private String color;
+    private String raza;
+    private String sexo;
+    private String tamano;
 
-    public Mascota(int id,String nombre, String descripcion, String fotoUrl, String telefono, String ciudad, String user_id, int isMascotaPerdida) {
+    public Mascota(int id, String nombre, String descripcion, String fotoUrl, String telefono, String ciudad, String user_id, int isMascotaPerdida, String tipoMascota, String color, String raza, String sexo, String tamano) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
@@ -19,8 +24,53 @@ public class Mascota {
         this.ciudad = ciudad;
         this.user_id = user_id;
         this.isMascotaPerdida = isMascotaPerdida;
+        this.tipo_mascota = tipoMascota;
+        this.color = color;
+        this.raza = raza;
+        this.sexo = sexo;
+        this.tamano = tamano;
     }
-    
+
+    public String getTipo_mascota() {
+        return tipo_mascota;
+    }
+
+    public void setTipo_mascota(String tipo_mascota) {
+        this.tipo_mascota = tipo_mascota;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public String getRaza() {
+        return raza;
+    }
+
+    public void setRaza(String raza) {
+        this.raza = raza;
+    }
+
+    public String getSexo() {
+        return sexo;
+    }
+
+    public void setSexo(String sexo) {
+        this.sexo = sexo;
+    }
+
+    public String getTamano() {
+        return tamano;
+    }
+
+    public void setTamano(String tamano) {
+        this.tamano = tamano;
+    }
+
     public int getId() {
         return id;
     }

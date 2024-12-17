@@ -20,9 +20,13 @@ import android.text.Spanned;
 import android.telephony.PhoneNumberFormattingTextWatcher;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -111,6 +115,8 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
     private static final int MAX_FOTOS = 4;
     private ViewPager2 viewPagerFotos;
     private FotosPagerAdapter fotosPagerAdapter;
+
+    private Spinner spinnerTipoMascota, spinnerColor, spinnerSexo, spinnerTamano,spinnerRaza;
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,6 +141,13 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
         btnSeleccionarFoto.setText("Seleccionar Fotos (0/" + MAX_FOTOS + ")");
         btnGuardarMascota = findViewById(R.id.btnGuardarMascota);
 
+        spinnerTipoMascota = findViewById(R.id.spinnerTipoMascota);
+        spinnerColor = findViewById(R.id.spinnerColor);
+        spinnerSexo = findViewById(R.id.spinnerSexo);
+        spinnerTamano = findViewById(R.id.spinnerTamano);
+        spinnerRaza = findViewById(R.id.spinnerRaza);
+        configurarSpinners();
+
         viewPagerFotos = findViewById(R.id.viewPagerFotos);
         fotosPagerAdapter = new FotosPagerAdapter(this, selectedImageUris);
         viewPagerFotos.setAdapter(fotosPagerAdapter);
@@ -155,7 +168,76 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         verificarPermisosUbicacion();
     }
+    private void configurarSpinners() {
+        // Tipos de mascota
+        String[] tiposMascota = {"Seleccione tipo", "Perro", "Gato", "Ave", "Conejo", "Otro"};
+        ArrayAdapter<String> tipoAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, tiposMascota);
+        spinnerTipoMascota.setAdapter(tipoAdapter);
 
+        // Colores comunes
+        String[] colores = {"Seleccione color", "Negro", "Blanco", "Marrón", "Gris", "Naranja",
+                "Manchado", "Atigrado", "Otro"};
+        ArrayAdapter<String> colorAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, colores);
+        spinnerColor.setAdapter(colorAdapter);
+        // Raza
+        ArrayAdapter<String> razaAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, new String[]{"Seleccione raza"});
+        spinnerRaza.setAdapter(razaAdapter);
+        String[] razasPerro = {"Seleccione raza", "Pastor Alemán", "Labrador", "Golden Retriever", "Bulldog", "Chihuahua", "Yorkshire", "Husky", "Otro"};
+        String[] razasGato = {"Seleccione raza", "Siamés", "Persa", "Angora", "Maine Coon", "Bengalí", "Otro"};
+        String[] razasAve = {"Seleccione raza", "Canario", "Periquito", "Cotorra", "Agaporni", "Loro", "Otro"};
+        String[] razasConejo = {"Seleccione raza", "Cabeza de León", "Mini Lop", "Angora", "Rex", "Holland Lop", "Otro"};
+        String[] razasOtro = {"Seleccione raza", "Otro"};
+        spinnerTipoMascota.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String tipoSeleccionado = tiposMascota[position];
+                ArrayAdapter<String> nuevoAdapter;
+
+                switch (tipoSeleccionado) {
+                    case "Perro":
+                        nuevoAdapter = new ArrayAdapter<>(NuevaMascotaPerdida.this,
+                                android.R.layout.simple_spinner_dropdown_item, razasPerro);
+                        break;
+                    case "Gato":
+                        nuevoAdapter = new ArrayAdapter<>(NuevaMascotaPerdida.this,
+                                android.R.layout.simple_spinner_dropdown_item, razasGato);
+                        break;
+                    case "Ave":
+                        nuevoAdapter = new ArrayAdapter<>(NuevaMascotaPerdida.this,
+                                android.R.layout.simple_spinner_dropdown_item, razasAve);
+                        break;
+                    case "Conejo":
+                        nuevoAdapter = new ArrayAdapter<>(NuevaMascotaPerdida.this,
+                                android.R.layout.simple_spinner_dropdown_item, razasConejo);
+                        break;
+                    default:
+                        nuevoAdapter = new ArrayAdapter<>(NuevaMascotaPerdida.this,
+                                android.R.layout.simple_spinner_dropdown_item, razasOtro);
+                        break;
+                }
+                spinnerRaza.setAdapter(nuevoAdapter);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        // Sexo
+        String[] sexos = {"Seleccione sexo", "Macho", "Hembra", "Desconocido"};
+        ArrayAdapter<String> sexoAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, sexos);
+        spinnerSexo.setAdapter(sexoAdapter);
+
+        // Tamaños
+        String[] tamanos = {"Seleccione tamaño", "Muy pequeño", "Pequeño", "Mediano", "Grande",
+                "Muy grande"};
+        ArrayAdapter<String> tamanoAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, tamanos);
+        spinnerTamano.setAdapter(tamanoAdapter);
+    }
     private void verificarPermisosUbicacion() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -354,6 +436,31 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
         if (selectedLocation == null) {
             Toast.makeText(this, "Por favor selecciona la ubicación en el mapa",
                     Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (spinnerTipoMascota.getSelectedItemPosition() == 0) {
+            Toast.makeText(this, "Por favor selecciona el tipo de mascota", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (spinnerColor.getSelectedItemPosition() == 0) {
+            Toast.makeText(this, "Por favor selecciona el color", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (spinnerRaza.getSelectedItemPosition() == 0) {
+            Toast.makeText(this, "Por favor selecciona la raza de mascota", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (spinnerSexo.getSelectedItemPosition() == 0) {
+            Toast.makeText(this, "Por favor selecciona el sexo", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (spinnerTamano.getSelectedItemPosition() == 0) {
+            Toast.makeText(this, "Por favor selecciona el tamaño", Toast.LENGTH_SHORT).show();
             return false;
         }
 
@@ -604,6 +711,11 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
     private void guardarMascota() {
         String nombre = etNombre.getText().toString().trim();
         String descripcion = etDescripcion.getText().toString().trim();
+        String tipoMascota = spinnerTipoMascota.getSelectedItem().toString();
+        String color = spinnerColor.getSelectedItem().toString();
+        String raza = spinnerRaza.getSelectedItem().toString();
+        String sexo = spinnerSexo.getSelectedItem().toString();
+        String tamano = spinnerTamano.getSelectedItem().toString();
         //String ciudad = etCiudad.getText().toString().trim();
         // Validar campos
         if (nombre.isEmpty()) {
@@ -651,7 +763,9 @@ public class NuevaMascotaPerdida extends AppCompatActivity {
                 .build();
 
         ApiService apiService = retrofit.create(ApiService.class);
-        Call<String> call = apiService.addMascotaPerdida(nombre, descripcion, numeroCompleto, ciudad, fotoUrl, userId);
+        Call<String> call = apiService.addMascotaPerdida(
+                nombre, descripcion, numeroCompleto, ciudad, fotoUrl, userId,
+                tipoMascota, color, raza, sexo, tamano);
         call.enqueue(new Callback<String>() {
             @Override
             public void onResponse(Call<String> call, Response<String> response) {

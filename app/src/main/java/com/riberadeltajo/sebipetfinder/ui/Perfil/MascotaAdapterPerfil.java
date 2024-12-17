@@ -87,6 +87,11 @@ public class MascotaAdapterPerfil extends RecyclerView.Adapter<MascotaAdapterPer
                     intent.putExtra("fotoUrl", selectedMascota.getFotoUrl());
                     intent.putExtra("telefono", selectedMascota.getTelefono());
                     intent.putExtra("ciudad", selectedMascota.getCiudad());
+                    intent.putExtra("tipoMascota", selectedMascota.getTipo_mascota());
+                    intent.putExtra("color", selectedMascota.getColor());
+                    intent.putExtra("raza", selectedMascota.getRaza());
+                    intent.putExtra("sexo", selectedMascota.getSexo());
+                    intent.putExtra("tamano", selectedMascota.getTamano());
                     ((Activity) context).startActivityForResult(intent, 1001);
                 }
             });

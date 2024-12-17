@@ -184,7 +184,12 @@ public class SlideshowFragment extends Fragment {
                                 anuncioJson.get("telefono").getAsString(),
                                 anuncioJson.get("ciudad").getAsString(),
                                 String.valueOf(userId),
-                                anuncioJson.get("isMascotaPerdida").getAsInt()
+                                anuncioJson.get("isMascotaPerdida").getAsInt(),
+                                anuncioJson.has("tipo_mascota") ? anuncioJson.get("tipo_mascota").getAsString() : "",
+                                anuncioJson.has("color") ? anuncioJson.get("color").getAsString() : "",
+                                anuncioJson.has("raza") ? anuncioJson.get("raza").getAsString() : "",
+                                anuncioJson.has("sexo") ? anuncioJson.get("sexo").getAsString() : "",
+                                anuncioJson.has("tamano") ? anuncioJson.get("tamano").getAsString() : ""
                         );
                         anuncios.add(mascota);
                     }

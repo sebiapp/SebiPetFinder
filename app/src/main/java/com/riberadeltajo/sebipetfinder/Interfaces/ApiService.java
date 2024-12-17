@@ -64,7 +64,12 @@ public interface ApiService {
             @Field("telefono") String telefono,
             @Field("ciudad") String ciudad,
             @Field("fotoUrl") String fotoUrl,
-            @Field("user_id") int userId
+            @Field("user_id") int userId,
+            @Field("tipo_mascota") String tipoMascota,
+            @Field("color") String color,
+            @Field("raza") String raza,
+            @Field("sexo") String sexo,
+            @Field("tamano") String tamano
     );
     /* AÑADIR MASCOTA PERDIDA */
     @FormUrlEncoded
@@ -75,7 +80,12 @@ public interface ApiService {
             @Field("telefono") String telefono,
             @Field("ciudad") String ciudad,
             @Field("fotoUrl") String fotoUrl,
-            @Field("user_id") int userId
+            @Field("user_id") int userId,
+            @Field("tipo_mascota") String tipoMascota,
+            @Field("color") String color,
+            @Field("raza") String raza,
+            @Field("sexo") String sexo,
+            @Field("tamano") String tamano
     );
     /* OBTENER LISTA DE ANUNCIOS DEL USUARIO */
     @FormUrlEncoded
@@ -101,7 +111,12 @@ public interface ApiService {
             @Field("descripcion") String descripcion,
             @Field("telefono") String telefono,
             @Field("ciudad") String ciudad,
-            @Field("fotoUrl") String fotoUrl
+            @Field("fotoUrl") String fotoUrl,
+            @Field("tipo_mascota") String tipoMascota,
+            @Field("color") String color,
+            @Field("raza") String raza,
+            @Field("sexo") String sexo,
+            @Field("tamano") String tamano
     );
     /* EDITAR MASCOTA ENCONTRADA */
     @FormUrlEncoded
@@ -112,7 +127,12 @@ public interface ApiService {
             @Field("descripcion") String descripcion,
             @Field("telefono") String telefono,
             @Field("ciudad") String ciudad,
-            @Field("fotoUrl") String fotoUrl
+            @Field("fotoUrl") String fotoUrl,
+            @Field("tipo_mascota") String tipoMascota,
+            @Field("color") String color,
+            @Field("raza") String raza,
+            @Field("sexo") String sexo,
+            @Field("tamano") String tamano
     );
     /* EDITAR USUARIO */
     @FormUrlEncoded

@@ -20,9 +20,12 @@ import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -41,6 +44,7 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.gson.JsonObject;
 import com.hbb20.CountryCodePicker;
 import com.riberadeltajo.sebipetfinder.Interfaces.ApiService;
+import com.riberadeltajo.sebipetfinder.Principal.NuevaMascotaPerdida;
 import com.riberadeltajo.sebipetfinder.R;
 import com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados.FotosUrlPagerAdapter;
 import com.squareup.picasso.Picasso;
@@ -75,6 +79,15 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 public class AnuncioInfo extends AppCompatActivity {
+    private final String[] tiposMascota = {"Seleccione tipo", "Perro", "Gato", "Ave", "Conejo", "Otro"};
+    private final String[] colores = {"Seleccione color", "Negro", "Blanco", "Marrón", "Gris", "Naranja",
+            "Manchado", "Atigrado", "Otro"};
+    private final String[] razas = {"Seleccione raza", "Pastor Alemán", "Labrador", "Golden Retriever",
+            "Bulldog", "Chihuahua", "Yorkshire", "Husky", "Siamés", "Persa", "Angora", "Maine Coon",
+            "Bengalí", "Otro"};
+    private final String[] sexos = {"Seleccione sexo", "Macho", "Hembra", "Desconocido"};
+    private final String[] tamanos = {"Seleccione tamaño", "Muy pequeño", "Pequeño", "Mediano", "Grande",
+            "Muy grande"};
     private int mascotaId;
     private EditText tvNombre, tvDescripcion, tvTelefono;
     private String fotoUrl;
@@ -95,6 +108,7 @@ public class AnuncioInfo extends AppCompatActivity {
     private static final int CAMERA_PERMISSION_CODE = 100;
     private static final int STORAGE_PERMISSION_CODE = 101;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
+    private Spinner spinnerTipoMascota, spinnerColor, spinnerRaza, spinnerSexo, spinnerTamano;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -113,11 +127,16 @@ public class AnuncioInfo extends AppCompatActivity {
         btnAgregarFoto = findViewById(R.id.btnAgregarFoto);
         btnBorrarFoto = findViewById(R.id.btnBorrarFoto);
         TabLayout tabLayout = findViewById(R.id.tabDots);
+        spinnerTipoMascota = findViewById(R.id.spinnerTipoMascota);
+        spinnerColor = findViewById(R.id.spinnerColor);
+        spinnerRaza = findViewById(R.id.spinnerRaza);
+        spinnerSexo = findViewById(R.id.spinnerSexo);
+        spinnerTamano = findViewById(R.id.spinnerTamano);
         configurarLaunchers();
         ccp = findViewById(R.id.ccp);
         Button btnGuardar = findViewById(R.id.btnGuardar);
         Button btnBorrar = findViewById(R.id.btnBorrar);
-
+        configurarSpinners();
         //Configurar el CountryCodePicker
         ccp.registerCarrierNumberEditText(tvTelefono);
         ccp.setDefaultCountryUsingNameCode("ES");
@@ -131,6 +150,12 @@ public class AnuncioInfo extends AppCompatActivity {
 
         String nombre = getIntent().getStringExtra("nombre");
         String descripcion = getIntent().getStringExtra("descripcion");
+        String tipoMascota = getIntent().getStringExtra("tipoMascota");
+        String color = getIntent().getStringExtra("color");
+        String raza = getIntent().getStringExtra("raza");
+        String sexo = getIntent().getStringExtra("sexo");
+        String tamano = getIntent().getStringExtra("tamano");
+
         fotoUrl = getIntent().getStringExtra("fotoUrl");
         if (fotoUrl != null && !fotoUrl.isEmpty()) {
             String[] fotosArray = fotoUrl.split(",");
@@ -164,6 +189,24 @@ public class AnuncioInfo extends AppCompatActivity {
             telefono = telefono.substring(3);
         }
         tvTelefono.setText(telefono);
+        setSpinnerToValue(spinnerTipoMascota, tipoMascota);
+        //Esperar a que se actualice el adapter de razas y luego establecer la raza
+        spinnerTipoMascota.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //Establecemos la raza después de que el adapter se haya actualizado
+                if (raza != null && !raza.isEmpty()) {
+                    setSpinnerToValue(spinnerRaza, raza);
+                }
+            }
+        }, 200);
+        setSpinnerToValue(spinnerColor, color);
+        //setSpinnerToValue(spinnerRaza, raza);
+        setSpinnerToValue(spinnerSexo, sexo);
+        setSpinnerToValue(spinnerTamano, tamano);
+
+
+
 
         configurarValidacionTelefono();
 
@@ -329,6 +372,11 @@ public class AnuncioInfo extends AppCompatActivity {
     private void editarMascota() {
         String nombre = tvNombre.getText().toString();
         String descripcion = tvDescripcion.getText().toString();
+        String tipoMascota = spinnerTipoMascota.getSelectedItem().toString();
+        String color = spinnerColor.getSelectedItem().toString();
+        String raza = spinnerRaza.getSelectedItem().toString();
+        String sexo = spinnerSexo.getSelectedItem().toString();
+        String tamano = spinnerTamano.getSelectedItem().toString();
         // Validar campos
         if (nombre.isEmpty()) {
             tvNombre.setError("El nombre es obligatorio");
@@ -341,7 +389,35 @@ public class AnuncioInfo extends AppCompatActivity {
             tvDescripcion.requestFocus();
             return;
         }
+        if (tipoMascota.equals("Seleccione tipo")) {
+            Toast.makeText(this, "Por favor seleccione un tipo de mascota", Toast.LENGTH_SHORT).show();
+            spinnerTipoMascota.requestFocus();
+            return;
+        }
 
+        if (color.equals("Seleccione color")) {
+            Toast.makeText(this, "Por favor seleccione un color", Toast.LENGTH_SHORT).show();
+            spinnerColor.requestFocus();
+            return;
+        }
+
+        if (raza.equals("Seleccione raza")) {
+            Toast.makeText(this, "Por favor seleccione una raza", Toast.LENGTH_SHORT).show();
+            spinnerRaza.requestFocus();
+            return;
+        }
+
+        if (sexo.equals("Seleccione sexo")) {
+            Toast.makeText(this, "Por favor seleccione el sexo", Toast.LENGTH_SHORT).show();
+            spinnerSexo.requestFocus();
+            return;
+        }
+
+        if (tamano.equals("Seleccione tamaño")) {
+            Toast.makeText(this, "Por favor seleccione el tamaño", Toast.LENGTH_SHORT).show();
+            spinnerTamano.requestFocus();
+            return;
+        }
         if (!ccp.isValidFullNumber()) {
             tvTelefono.setError("Número de teléfono inválido");
             tvTelefono.requestFocus();
@@ -353,6 +429,10 @@ public class AnuncioInfo extends AppCompatActivity {
         }
         if (fotosUrlsList.isEmpty()) {
             Toast.makeText(this, "Debe tener al menos una foto", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (spinnerTipoMascota.getSelectedItemPosition() == 0) {
+            Toast.makeText(this, "Por favor selecciona el tipo de mascota", Toast.LENGTH_SHORT).show();
             return;
         }
         String ciudad = String.format(Locale.US, "%.6f,%.6f",
@@ -370,9 +450,11 @@ public class AnuncioInfo extends AppCompatActivity {
 
         Call<String> call;
         if (isMascotaPerdida) {
-            call = apiService.editarMascotaPerdida(mascotaId, nombre, descripcion, numeroCompleto,ciudad,fotoUrl);
+            call = apiService.editarMascotaPerdida(mascotaId, nombre, descripcion, numeroCompleto, ciudad, fotoUrl,
+                    tipoMascota, color, raza, sexo, tamano);
         } else {
-            call = apiService.editarMascotaEncontrada(mascotaId, nombre, descripcion, numeroCompleto,ciudad,fotoUrl);
+            call = apiService.editarMascotaEncontrada(mascotaId, nombre, descripcion, numeroCompleto, ciudad, fotoUrl,
+                    tipoMascota, color, raza, sexo, tamano);
         }
         ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Actualizando anuncio...");
@@ -647,7 +729,6 @@ public class AnuncioInfo extends AppCompatActivity {
             tabLayout.setVisibility(View.VISIBLE);
             new TabLayoutMediator(tabLayout, viewPagerFotos,
                     (tab, position) -> {
-                        // No necesitamos texto en los tabs
                     }
             ).attach();
         } else {
@@ -671,5 +752,93 @@ public class AnuncioInfo extends AppCompatActivity {
         }
 
         return Bitmap.createScaledBitmap(imagen, width, height, true);
+    }
+    //FILTROS
+    private void configurarSpinners() {
+        //Tipos de mascota
+        ArrayAdapter<String> tipoAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, tiposMascota);
+        spinnerTipoMascota.setAdapter(tipoAdapter);
+
+        //Colores
+        ArrayAdapter<String> colorAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, colores);
+        spinnerColor.setAdapter(colorAdapter);
+        //Raza
+        ArrayAdapter<String> razaAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, new String[]{"Seleccione raza"});
+        spinnerRaza.setAdapter(razaAdapter);
+        String[] razasPerro = {"Seleccione raza", "Pastor Alemán", "Labrador", "Golden Retriever", "Bulldog", "Chihuahua", "Yorkshire", "Husky", "Otro"};
+        String[] razasGato = {"Seleccione raza", "Siamés", "Persa", "Angora", "Maine Coon", "Bengalí", "Otro"};
+        String[] razasAve = {"Seleccione raza", "Canario", "Periquito", "Cotorra", "Agaporni", "Loro", "Otro"};
+        String[] razasConejo = {"Seleccione raza", "Cabeza de León", "Mini Lop", "Angora", "Rex", "Holland Lop", "Otro"};
+        String[] razasOtro = {"Seleccione raza", "Otro"};
+        spinnerTipoMascota.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String tipoSeleccionado = tiposMascota[position];
+                String razaActual = spinnerRaza.getSelectedItem() != null ?
+                        spinnerRaza.getSelectedItem().toString() : "";
+                ArrayAdapter<String> nuevoAdapter;
+
+                switch (tipoSeleccionado) {
+                    case "Perro":
+                        nuevoAdapter = new ArrayAdapter<>(AnuncioInfo.this,
+                                android.R.layout.simple_spinner_dropdown_item, razasPerro);
+                        break;
+                    case "Gato":
+                        nuevoAdapter = new ArrayAdapter<>(AnuncioInfo.this,
+                                android.R.layout.simple_spinner_dropdown_item, razasGato);
+                        break;
+                    case "Ave":
+                        nuevoAdapter = new ArrayAdapter<>(AnuncioInfo.this,
+                                android.R.layout.simple_spinner_dropdown_item, razasAve);
+                        break;
+                    case "Conejo":
+                        nuevoAdapter = new ArrayAdapter<>(AnuncioInfo.this,
+                                android.R.layout.simple_spinner_dropdown_item, razasConejo);
+                        break;
+                    default:
+                        nuevoAdapter = new ArrayAdapter<>(AnuncioInfo.this,
+                                android.R.layout.simple_spinner_dropdown_item, razasOtro);
+                        break;
+                }
+                spinnerRaza.setAdapter(nuevoAdapter);
+
+                // Intentar mantener la selección previa si existe en el nuevo adapter
+                if (!razaActual.isEmpty()) {
+                    setSpinnerToValue(spinnerRaza, razaActual);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        //Sexo
+        ArrayAdapter<String> sexoAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, sexos);
+        spinnerSexo.setAdapter(sexoAdapter);
+
+        //Tamaños
+        ArrayAdapter<String> tamanoAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, tamanos);
+        spinnerTamano.setAdapter(tamanoAdapter);
+    }
+    private void setSpinnerToValue(Spinner spinner, String value) {
+        Log.d("Spinner", "Intentando establecer valor: " + value);
+        if (value != null && !value.isEmpty() && spinner.getAdapter() != null) {
+            ArrayAdapter adapter = (ArrayAdapter) spinner.getAdapter();
+            for (int position = 0; position < adapter.getCount(); position++) {
+                String item = adapter.getItem(position).toString();
+                Log.d("Spinner", "Comparando con: " + item);
+                if (item.equals(value)) {
+                    spinner.setSelection(position);
+                    Log.d("Spinner", "Valor establecido en posición: " + position);
+                    return;
+                }
+            }
+        }
+        Log.d("Spinner", "No se pudo establecer el valor: " + value);
     }
 }
