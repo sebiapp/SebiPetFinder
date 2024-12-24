@@ -1,5 +1,6 @@
 package com.riberadeltajo.sebipetfinder.Interfaces;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados.Mascota;
 
@@ -13,6 +14,7 @@ import retrofit2.http.GET;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
+import retrofit2.http.Query;
 
 public interface ApiService {
     /* PARA EL INICIO DE SESION */
@@ -195,4 +197,29 @@ public interface ApiService {
     @POST("update_username.php")
     Call<JsonObject> updateUsername(@Field("user_id") int userId,
                                     @Field("username") String username);
+
+    //MENSAJES
+    @FormUrlEncoded
+    @POST("enviarMensaje.php")
+    Call<JsonObject> enviarMensaje(
+            @Field("emisor_id") String emisorId,
+            @Field("receptor_id") String receptorId,
+            @Field("anuncio_id") String anuncioId,
+            @Field("tipo_anuncio") String tipoAnuncio,
+            @Field("mensaje") String mensaje
+    );
+
+    @GET("obtenerMensajes.php")
+    Call<JsonArray> obtenerMensajes(
+            @Query("emisor_id") int emisorId,
+            @Query("receptor_id") String receptorId,
+            @Query("anuncio_id") int anuncioId
+    );
+    @GET("obtenerConversaciones.php")
+    Call<JsonArray> obtenerConversaciones(@Query("user_id") int userId);
+    @GET("obtenerDuenoAnuncio.php")
+    Call<JsonObject> obtenerDuenoAnuncio(@Query("anuncio_id") String anuncioId);
+
+    @GET("obtenerDuenoAnuncioPerdido.php")
+    Call<JsonObject> obtenerDuenoAnuncioPerdido(@Query("anuncio_id") String anuncioId);
 }

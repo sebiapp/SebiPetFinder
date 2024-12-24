@@ -23,8 +23,10 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.riberadeltajo.sebipetfinder.Login.MainActivity;
+import com.riberadeltajo.sebipetfinder.Mensajes.ListaMensajesActivity;
 import com.riberadeltajo.sebipetfinder.R;
 import com.riberadeltajo.sebipetfinder.databinding.ActivityMainPanelBinding;
+import com.riberadeltajo.sebipetfinder.ui.Perfil.SlideshowFragment;
 
 public class MainPanelActivity extends AppCompatActivity {
 
@@ -79,6 +81,7 @@ public class MainPanelActivity extends AppCompatActivity {
 
         //Ocultar el botón flotante si estamos en el SlideshowFragment
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            invalidateOptionsMenu();
             if (destination.getId() == R.id.nav_slideshow) {
                 binding.appBarMainPanel.fab.hide();
             } else {
@@ -90,6 +93,23 @@ public class MainPanelActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_panel, menu);
         return true;
+    }
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem logoutItem = menu.findItem(R.id.action_logout);
+        MenuItem messagesItem = menu.findItem(R.id.action_messages);
+
+        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main_panel);
+        int currentFragmentId = navController.getCurrentDestination().getId();
+
+        if (currentFragmentId == R.id.nav_slideshow) {
+            logoutItem.setVisible(true);
+            messagesItem.setVisible(false);
+        } else {
+            logoutItem.setVisible(false);
+            messagesItem.setVisible(true);
+        }
+        return super.onPrepareOptionsMenu(menu);
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -120,6 +140,10 @@ public class MainPanelActivity extends AppCompatActivity {
                     })
                     .setNegativeButton("No", null)
                     .show();
+            return true;
+        }else if (item.getItemId() == R.id.action_messages) {
+            Intent intent = new Intent(MainPanelActivity.this, ListaMensajesActivity.class);
+            startActivity(intent);
             return true;
         }
         return super.onOptionsItemSelected(item);

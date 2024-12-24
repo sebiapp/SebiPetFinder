@@ -7,4 +7,10 @@
         android:title="Cerrar sesión"
         android:icon="@drawable/baseline_logout_24"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/action_messages"
+        android:icon="@drawable/baseline_message_24"
+        android:title="Mensajes"
+        android:visible="false"
+        app:showAsAction="always" />
 </menu>

@@ -2,6 +2,7 @@ package com.riberadeltajo.sebipetfinder.ui.AnimalesEncontrados;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -76,13 +77,15 @@ public class MascotaAdapter extends RecyclerView.Adapter<MascotaAdapter.ViewHold
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION) {
                     Mascota selectedMascota = mascotas.get(position);
+                    Log.d("MascotaAdapter", "ID de la mascota: " + selectedMascota.getId());
                     Intent intent = new Intent(context, MascotaEncontradaInfo.class);
                     intent.putExtra("nombre", selectedMascota.getNombre());
                     intent.putExtra("descripcion", selectedMascota.getDescripcion());
                     intent.putExtra("fotoUrl", selectedMascota.getFotoUrl());
                     intent.putExtra("telefono", selectedMascota.getTelefono());
                     intent.putExtra("ciudad", selectedMascota.getCiudad());
-                    intent.putExtra("anuncioId", selectedMascota.getUser_id());
+                    intent.putExtra("anuncioId", selectedMascota.getId());
+                    intent.putExtra("tipoAnuncio", selectedMascota.isMascotaPerdida() ? "perdida" : "encontrada");
                     intent.putExtra("tipoMascota", selectedMascota.getTipo_mascota());
                     intent.putExtra("color", selectedMascota.getColor());
                     intent.putExtra("raza", selectedMascota.getRaza());

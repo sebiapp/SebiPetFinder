@@ -65,6 +65,12 @@
             android:name=".Login.ForgotPasswordActivity"
             android:exported="false" />
         <activity
+            android:name=".Mensajes.ChatActivity"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity
+            android:name=".Mensajes.ListaMensajesActivity"
+            android:exported="false" />
+        <activity
             android:name=".Login.MainActivity"
             android:exported="true">
             <intent-filter>

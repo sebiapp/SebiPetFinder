@@ -29,6 +29,7 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 
+import com.riberadeltajo.sebipetfinder.Mensajes.ChatActivity;
 import com.riberadeltajo.sebipetfinder.Principal.FotosPagerAdapter;
 import com.riberadeltajo.sebipetfinder.R;
 import com.squareup.picasso.Picasso;
@@ -49,11 +50,12 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MascotaEncontradaInfo extends AppCompatActivity {
     private MapView mapView;
     private ApiService apiService;
-    private String anuncioId;
+    private int anuncioId;
     private ViewPager2 viewPagerFotos;
     private FotosUrlPagerAdapter fotosUrlPagerAdapter;
     private List<Uri> fotosList = new ArrayList<>();
     private String nombre,descripcion;
+    private String tipoAnuncio;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,14 +78,16 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         String fotoUrl = getIntent().getStringExtra("fotoUrl");
         String telefono = getIntent().getStringExtra("telefono");
         String ciudad = getIntent().getStringExtra("ciudad");
+        anuncioId = getIntent().getIntExtra("anuncioId",0);
+        tipoAnuncio = getIntent().getStringExtra("tipoAnuncio");
         String tipoMascota = getIntent().getStringExtra("tipoMascota");
         String color = getIntent().getStringExtra("color");
         String raza = getIntent().getStringExtra("raza");
         String sexo = getIntent().getStringExtra("sexo");
         String tamano = getIntent().getStringExtra("tamano");
-        anuncioId = getIntent().getStringExtra("anuncioId");
 
-        Log.d("ID ANUNCIO ",anuncioId);
+
+        Log.d("ID ANUNCIO ", String.valueOf(anuncioId));
         TextView tvNombre = findViewById(R.id.tvNombre);
         TextView tvDescripcion = findViewById(R.id.tvApellido);
         TextView tvTelefono = findViewById(R.id.tvUsuario);
@@ -210,13 +214,21 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
                 Toast.makeText(this, "Ciudad no disponible", Toast.LENGTH_SHORT).show();
             }
         });
+        Button btnMessage = findViewById(R.id.messageButton);
+        btnMessage.setOnClickListener(v -> {
+            Intent intent = new Intent(this, ChatActivity.class);
+            intent.putExtra("anuncioId", anuncioId); // ID del anuncio
+            Log.d("tipoanuncio", tipoAnuncio);
+            intent.putExtra("tipoAnuncio", tipoAnuncio);
+            startActivity(intent);
+        });
     }
 
     private void enviarNotificacion(String tipo) {
-        if (anuncioId != null) {
+        if (anuncioId != 0) {
             Log.d("Notificación", "Enviando notificación con anuncioId: " + anuncioId + " y tipo: " + tipo);
 
-            Call<JsonObject> call = apiService.enviarNotificacion(anuncioId, tipo);
+            Call<JsonObject> call = apiService.enviarNotificacion(String.valueOf(anuncioId), tipo);
 
             Log.d("Notificación", "Llamando a la API para enviar la notificación...");
 
@@ -292,9 +304,9 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
             //Comprimir con mejor calidad
             File cachePath = new File(getCacheDir(), "images");
             cachePath.mkdirs();
-            File imageFile = new File(cachePath, "shared_image.jpg"); //Cambiado a JPG
+            File imageFile = new File(cachePath, "shared_image.jpg");
             FileOutputStream stream = new FileOutputStream(imageFile);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, stream); //Usar JPEG con alta calidad
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, stream);
             stream.flush();
             stream.close();
 
