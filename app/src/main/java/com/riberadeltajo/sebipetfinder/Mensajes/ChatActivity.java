@@ -6,6 +6,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -38,6 +39,9 @@ public class ChatActivity extends AppCompatActivity {
     private MensajeAdapter mensajeAdapter;
     private List<Mensaje> mensajes;
     private String tipoAnuncio;
+
+    private TextView userNameTitle;
+    private ImageButton backButton;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,7 +51,9 @@ public class ChatActivity extends AppCompatActivity {
         messagesRecyclerView = findViewById(R.id.messagesRecyclerView);
         messageInput = findViewById(R.id.messageInput);
         sendButton = findViewById(R.id.sendButton);
-
+        userNameTitle = findViewById(R.id.userNameTitle);
+        backButton = findViewById(R.id.backButton);
+        backButton.setOnClickListener(v -> finish());
         SharedPreferences prefs = getSharedPreferences("user_data", MODE_PRIVATE);
         emisorId = prefs.getInt("userId", -1);
         int anuncioId = getIntent().getIntExtra("anuncioId",0);
@@ -75,14 +81,35 @@ public class ChatActivity extends AppCompatActivity {
         if (otroUsuarioId != null) {
             Log.d("ChatActivity", "Usando otroUsuarioId como receptor");
             receptorId = otroUsuarioId;
+            obtenerNombreUsuario(otroUsuarioId);
             sendButton.setEnabled(true);
             cargarMensajes();
         } else {
             Log.d("ChatActivity", "Obteniendo dueño del anuncio");
-
             obtenerDuenoAnuncio(String.valueOf(anuncioId));
             sendButton.setEnabled(false);
         }
+    }
+    private void obtenerNombreUsuario(String userId) {
+        Call<JsonObject> call = apiService.obtenerUsuario(userId);
+        call.enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    if (response.body().has("nombre_usuario")) {
+                        String nombreUsuario = response.body().get("nombre_usuario").getAsString();
+                        userNameTitle.setText(nombreUsuario);
+                    }
+                } else {
+                    Log.e("ChatActivity", "Error al obtener nombre de usuario");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Log.e("ChatActivity", "Error al obtener nombre de usuario", t);
+            }
+        });
     }
     private void obtenerDuenoAnuncio(String anuncioId) {
         if (anuncioId == null) {
@@ -119,6 +146,11 @@ public class ChatActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     if (response.body().has("user_id")) {
                         receptorId = response.body().get("user_id").getAsString();
+                        // Establecer el nombre de usuario en el título
+                        if (response.body().has("nombre_usuario")) {
+                            String nombreUsuario = response.body().get("nombre_usuario").getAsString();
+                            userNameTitle.setText(nombreUsuario);
+                        }
                         sendButton.setEnabled(true);
                         cargarMensajes();
                     } else {
@@ -126,10 +158,6 @@ public class ChatActivity extends AppCompatActivity {
                         Toast.makeText(ChatActivity.this,
                                 "Error al obtener información del dueño", Toast.LENGTH_SHORT).show();
                     }
-                } else {
-                    Log.e("ChatActivity", "Error en la respuesta: " + response.code());
-                    Toast.makeText(ChatActivity.this,
-                            "Error al obtener información del dueño", Toast.LENGTH_SHORT).show();
                 }
             }
 

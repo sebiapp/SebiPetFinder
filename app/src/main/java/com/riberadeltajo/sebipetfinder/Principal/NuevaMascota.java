@@ -67,6 +67,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -460,36 +461,35 @@ public class NuevaMascota extends AppCompatActivity {
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        //Configurar OkHttpClient con timeouts
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(60, TimeUnit.SECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)
                 .build();
 
-        for (Uri imageUri : selectedImageUris) {
+        for (int i = 0; i < selectedImageUris.size(); i++) {
+            Uri imageUri = selectedImageUris.get(i);
             try {
                 String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-                String fileName = "image_" + timestamp + "_" + contador.get() + ".jpg";
+                //Usar índice i para el nombre del archivo
+                String fileName = "image_" + timestamp + "_" + i + ".jpg";
                 File file = new File(getCacheDir(), fileName);
 
                 //Leer y comprimir la imagen
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
-                bitmap = redimensionarImagen(bitmap, 800); //Reducir tamaño aún más
+                bitmap = redimensionarImagen(bitmap, 800);
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 60, baos); //Reducir calidad a 60%
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 60, baos);
                 byte[] imageBytes = baos.toByteArray();
                 bitmap.recycle();
                 baos.close();
 
-                //Escribir bytes
                 FileOutputStream fos = new FileOutputStream(file);
                 fos.write(imageBytes);
                 fos.flush();
                 fos.close();
 
-                //Crear RequestBody directamente de los bytes
                 RequestBody requestBody = RequestBody.create(MediaType.parse("image/jpeg"), imageBytes);
                 MultipartBody.Part body = MultipartBody.Part.createFormData("image", fileName, requestBody);
 
@@ -500,26 +500,36 @@ public class NuevaMascota extends AppCompatActivity {
                         .build();
 
                 ApiService apiService = retrofit.create(ApiService.class);
-                int currentCount = contador.get();
-                Call<JsonObject> call = apiService.uploadImage(body);
+                final int currentIndex = i; //Guardar el índice actual para uso en el callback
 
+                Call<JsonObject> call = apiService.uploadImage(body);
                 call.enqueue(new Callback<JsonObject>() {
                     @Override
                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                         try {
                             if (response.isSuccessful() && response.body() != null) {
                                 String url = response.body().get("url").getAsString();
-                                fotosUrls.add(url);
+                                if (url.startsWith("https://sienna-coyote-339198.hostingersite.com/")) {
+                                    url = url.replace("https://sienna-coyote-339198.hostingersite.com/", "");
+                                }
+                                //Agregar la URL en el índice correcto
+                                while (fotosUrls.size() <= currentIndex) {
+                                    fotosUrls.add(null);
+                                }
+                                fotosUrls.set(currentIndex, url);
 
                                 if (contador.incrementAndGet() == selectedImageUris.size()) {
                                     progressDialog.dismiss();
-                                    fotoUrl = String.join(",", fotosUrls);
+                                    //Filtrar cualquier null y unir las URLs
+                                    fotoUrl = fotosUrls.stream()
+                                            .filter(u -> u != null)
+                                            .collect(Collectors.joining(","));
                                     guardarMascota();
                                 }
                             } else {
                                 progressDialog.dismiss();
                                 Toast.makeText(NuevaMascota.this,
-                                        "Error subiendo imagen " + (currentCount + 1),
+                                        "Error subiendo imagen " + (currentIndex + 1),
                                         Toast.LENGTH_SHORT).show();
                             }
                         } catch (Exception e) {
@@ -540,7 +550,7 @@ public class NuevaMascota extends AppCompatActivity {
                         progressDialog.dismiss();
                         Log.e("SubirImagen", "Error de red", t);
                         Toast.makeText(NuevaMascota.this,
-                                "Error de conexión al subir imagen " + (currentCount + 1),
+                                "Error de conexión al subir imagen " + (currentIndex + 1),
                                 Toast.LENGTH_SHORT).show();
                         if (file.exists()) {
                             file.delete();
@@ -551,7 +561,7 @@ public class NuevaMascota extends AppCompatActivity {
             } catch (Exception e) {
                 progressDialog.dismiss();
                 Log.e("SubirImagen", "Error general", e);
-                Toast.makeText(this, "Error procesando imagen " + (contador.get() + 1),
+                Toast.makeText(this, "Error procesando imagen " + (i + 1),
                         Toast.LENGTH_SHORT).show();
             }
         }

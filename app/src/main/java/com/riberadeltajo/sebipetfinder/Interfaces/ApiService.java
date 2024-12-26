@@ -222,4 +222,6 @@ public interface ApiService {
 
     @GET("obtenerDuenoAnuncioPerdido.php")
     Call<JsonObject> obtenerDuenoAnuncioPerdido(@Query("anuncio_id") String anuncioId);
+    @GET("obtenerUsuario.php")
+    Call<JsonObject> obtenerUsuario(@Query("user_id") String userId);
 }
