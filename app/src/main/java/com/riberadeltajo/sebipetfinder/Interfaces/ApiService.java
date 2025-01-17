@@ -162,17 +162,6 @@ public interface ApiService {
     @FormUrlEncoded
     @POST("borrarMascotaEncontrada.php")
     Call<String> borrarMascotaEncontrada(@Field("mascota_id") int mascotaId);
-
-    /* OBTENER TODAS LAS MOSCATAS PERDIDAS DE UNA CIUDAD EN ESPECIFICO */
-    @FormUrlEncoded
-    @POST("getMascotasByCity.php")
-    Call<List<Mascota>> getMascotasByCity(@Field("ciudad") String ciudad);
-
-    /* OBTENER TODAS LAS MOSCATAS ENCONTRADAS DE UNA CIUDAD EN ESPECIFICO */
-    @FormUrlEncoded
-    @POST("getMascotasEncontradasByCity.php")
-    Call<List<Mascota>> getMascotasEncontradasByCity(@Field("ciudad") String ciudad);
-
     @FormUrlEncoded
     @POST("forgot_password.php")
     Call<JsonObject> enviarCodigoRestablecerPassword(@Field("email") String email);

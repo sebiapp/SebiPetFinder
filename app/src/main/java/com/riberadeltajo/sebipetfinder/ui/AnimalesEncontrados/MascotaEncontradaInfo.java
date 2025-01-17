@@ -216,6 +216,7 @@ public class MascotaEncontradaInfo extends AppCompatActivity {
         });
         Button btnMessage = findViewById(R.id.messageButton);
         btnMessage.setOnClickListener(v -> {
+            enviarNotificacion("llamada");
             Intent intent = new Intent(this, ChatActivity.class);
             intent.putExtra("anuncioId", anuncioId); // ID del anuncio
             Log.d("tipoanuncio", tipoAnuncio);

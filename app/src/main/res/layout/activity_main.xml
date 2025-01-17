@@ -44,7 +44,6 @@
                 android:drawablePadding="8dp"
                 android:hint="ejemplo@gmail.com"
                 android:padding="8dp"
-                android:text="messi@gmail.com"
                 android:textColor="@color/black" />
 
             <LinearLayout
@@ -65,7 +64,6 @@
                     android:hint="Contraseña"
                     android:inputType="textPassword"
                     android:padding="8dp"
-                    android:text="messi"
                     android:textColor="@color/black" />
 
                 <ImageView
