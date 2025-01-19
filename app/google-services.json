@@ -22,6 +22,30 @@
           }
         },
         {
+          "client_id": "13361919271-7pd95c09fta0vjct603gki23893crsp9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.riberadeltajo.sebipetfinder",
+            "certificate_hash": "9b9520e80159316d50433b873e78fa7f8af57ef6"
+          }
+        },
+        {
+          "client_id": "13361919271-jehbm7kug06qpp4d54nf6snaj4acampn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.riberadeltajo.sebipetfinder",
+            "certificate_hash": "82da0eb747b6e828f2d9f09397ffcaa0774a3774"
+          }
+        },
+        {
+          "client_id": "13361919271-qbma6tl1ucasrvigpn4re7hph6fqth8r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.riberadeltajo.sebipetfinder",
+            "certificate_hash": "fef1450d765df2cf93288011f1fa298bf7050cb7"
+          }
+        },
+        {
           "client_id": "13361919271-st24lsaiab3fobv7lsj2996ekr3tvre5.apps.googleusercontent.com",
           "client_type": 3
         }

@@ -252,14 +252,14 @@ public class MainActivity extends AppCompatActivity {
                             });
 
                         } else {
-                            Toast.makeText(MainActivity.this, "Usuario o contraseña incorrecto", Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, "Correo o contraseña incorrecto", Toast.LENGTH_LONG).show();
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
                         Toast.makeText(MainActivity.this, "Error parsing response", Toast.LENGTH_LONG).show();
                     }
                 } else {
-                    Toast.makeText(MainActivity.this, "Usuario o contraseña incorrecto", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Correo o contraseña incorrecto", Toast.LENGTH_LONG).show();
                 }
             }
 

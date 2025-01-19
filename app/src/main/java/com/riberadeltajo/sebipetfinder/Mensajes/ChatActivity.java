@@ -2,6 +2,7 @@ package com.riberadeltajo.sebipetfinder.Mensajes;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.EditText;
@@ -42,6 +43,9 @@ public class ChatActivity extends AppCompatActivity {
 
     private TextView userNameTitle;
     private ImageButton backButton;
+
+    private Handler handler = new Handler();
+    private Runnable runnable;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,6 +93,15 @@ public class ChatActivity extends AppCompatActivity {
             obtenerDuenoAnuncio(String.valueOf(anuncioId));
             sendButton.setEnabled(false);
         }
+
+        runnable = new Runnable() {
+            @Override
+            public void run() {
+                cargarMensajes();
+                handler.postDelayed(this, 2000);
+            }
+        };
+        handler.postDelayed(runnable, 2000);
     }
     private void obtenerNombreUsuario(String userId) {
         Call<JsonObject> call = apiService.obtenerUsuario(userId);
@@ -240,7 +253,6 @@ public class ChatActivity extends AppCompatActivity {
             public void onResponse(Call<JsonArray> call, Response<JsonArray> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Log.d("ChatActivity", "Mensajes recibidos: " + response.body().toString());
-
                     mensajes.clear();
                     for (JsonElement element : response.body()) {
                         JsonObject json = element.getAsJsonObject();
@@ -282,5 +294,9 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacks(runnable);
+    }
 }
