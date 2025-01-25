@@ -217,6 +217,11 @@ public class SlideshowFragment extends Fragment {
         }
     }
     @Override
+    public void onResume() {
+        super.onResume();
+        loadAnuncios();
+    }
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;

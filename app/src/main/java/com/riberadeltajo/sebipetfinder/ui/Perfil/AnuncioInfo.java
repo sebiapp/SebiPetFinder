@@ -452,9 +452,13 @@ public class AnuncioInfo extends AppCompatActivity {
         if (isMascotaPerdida) {
             call = apiService.editarMascotaPerdida(mascotaId, nombre, descripcion, numeroCompleto, ciudad, fotoUrl,
                     tipoMascota, color, raza, sexo, tamano);
+            Log.d("param",mascotaId+ nombre+ descripcion+ numeroCompleto+ ciudad+ fotoUrl+
+                    tipoMascota+ color+ raza+ sexo+ tamano);
         } else {
             call = apiService.editarMascotaEncontrada(mascotaId, nombre, descripcion, numeroCompleto, ciudad, fotoUrl,
                     tipoMascota, color, raza, sexo, tamano);
+            Log.d("param",mascotaId+ nombre+ descripcion+ numeroCompleto+ ciudad+ fotoUrl+
+                    tipoMascota+ color+ raza+ sexo+ tamano);
         }
         ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Actualizando anuncio...");
@@ -471,6 +475,7 @@ public class AnuncioInfo extends AppCompatActivity {
                         finish();
                     } else {
                         Toast.makeText(AnuncioInfo.this, responseBody, Toast.LENGTH_SHORT).show();
+                        Log.d("Error",responseBody);
                     }
                 } else {
                     Toast.makeText(AnuncioInfo.this, "Error al actualizar el anuncio", Toast.LENGTH_SHORT).show();
